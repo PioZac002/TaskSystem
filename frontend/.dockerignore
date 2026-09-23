@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dev-dist/
+.env
+.env.*
+!.env.example
+.impeccable/
+.idea/
+.vscode/
+.DS_Store
+coverage/

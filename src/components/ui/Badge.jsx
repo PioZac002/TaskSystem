@@ -2,21 +2,22 @@ import React from "react";
 import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+// Badges are HUD readouts: square tiles, pixel caps, no hover states.
 const badgeVariants = cva(
-    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+    "hud inline-flex items-center gap-1 whitespace-nowrap border px-1.5 text-[0.6875rem] leading-5",
     {
         variants: {
             variant: {
-                default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-                secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-                outline: "text-foreground",
-                success: "border-transparent bg-success text-success-foreground hover:bg-success/80",
-                warning: "border-transparent bg-warning text-warning-foreground hover:bg-warning/80",
-                accent: "border-transparent bg-accent text-accent-foreground hover:bg-accent/80",
-                todo: "border-transparent bg-muted text-muted-foreground hover:bg-muted/80",
-                inprogress: "border-transparent bg-accent text-accent-foreground hover:bg-accent/80",
-                done: "border-transparent bg-success text-success-foreground hover:bg-success/80",
+                default: "border-primary bg-primary text-primary-foreground",
+                secondary: "border-border bg-muted text-foreground",
+                destructive: "border-[color-mix(in_srgb,var(--px-red)_55%,transparent)] bg-[color-mix(in_srgb,var(--px-red)_12%,transparent)] text-[var(--px-red)]",
+                outline: "border-border text-muted-foreground",
+                success: "border-[color-mix(in_srgb,var(--px-green)_55%,transparent)] bg-[color-mix(in_srgb,var(--px-green)_12%,transparent)] text-[var(--px-green)]",
+                warning: "border-[color-mix(in_srgb,var(--px-gold)_55%,transparent)] bg-[color-mix(in_srgb,var(--px-gold)_12%,transparent)] text-[var(--px-gold)]",
+                accent: "border-transparent bg-accent text-accent-foreground",
+                todo: "st-chip st-TODO",
+                inprogress: "st-chip st-IN_PROGRESS",
+                done: "st-chip st-DONE",
             },
         },
         defaultVariants: {

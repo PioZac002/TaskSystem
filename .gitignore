@@ -23,3 +23,10 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+
+# Lokalne ustawienia Claude Code i materiały robocze
+.claude/settings.local.json
+.impeccable/review/
+.impeccable/qualitybar/
+.impeccable/questions/
+.impeccable/hook.cache.json

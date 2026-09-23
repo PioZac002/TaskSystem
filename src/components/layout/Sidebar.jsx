@@ -1,29 +1,21 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import {
-    LayoutDashboard,
-    FolderKanban,
-    CheckSquare,
-    KanbanSquare,
-    Users,
-    UserCircle,
-    Tag,
-    Info,
-    Sparkles,
-} from "lucide-react";
+import { Info } from "lucide-react";
+import { IconBoard, IconFolder, IconHome, IconIssues, IconLabel, IconUser, IconUsers } from "@/components/arcade/icons";
+import { PixelMark } from "@/components/arcade/PixelMark";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 
 const ALL_NAV_ITEMS = [
-    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Projects", url: "/projects", icon: FolderKanban },
-    { title: "Issues", url: "/issues", icon: CheckSquare },
-    { title: "Board", url: "/board", icon: KanbanSquare },
-    { title: "Teams", url: "/teams", icon: Users },
-    { title: "Users", url: "/users", icon: UserCircle, adminOnly: true },
-    { title: "Labels", url: "/labels", icon: Tag, adminOnly: true },
+    { title: "Dashboard", url: "/dashboard", icon: IconHome },
+    { title: "Projects", url: "/projects", icon: IconFolder },
+    { title: "Issues", url: "/issues", icon: IconIssues },
+    { title: "Board", url: "/board", icon: IconBoard },
+    { title: "Teams", url: "/teams", icon: IconUsers },
+    { title: "Users", url: "/users", icon: IconUser, adminOnly: true },
+    { title: "Labels", url: "/labels", icon: IconLabel, adminOnly: true },
 ];
 
 export const Sidebar = () => {
@@ -39,6 +31,7 @@ export const Sidebar = () => {
 
     return (
         <aside
+            data-slot="app-sidebar"
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
             onFocusCapture={() => setOpen(true)}
@@ -48,15 +41,15 @@ export const Sidebar = () => {
                 }
             }}
             className={cn(
-                "relative top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-border bg-card/95 shadow-[12px_0_40px_rgba(15,23,42,0.04)] backdrop-blur-xl transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:flex",
+                "relative top-0 hidden h-dvh shrink-0 flex-col overflow-hidden border-r-2 border-border bg-card transition-[width] duration-200 [transition-timing-function:steps(5,end)] md:flex",
                 open ? "w-72" : "w-[4.75rem]"
             )}
         >
-            <div className="flex h-16 items-center border-b border-border px-4">
+            <div className="flex h-16 items-center border-b-2 border-border px-4">
                 <Link to="/dashboard" className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background shadow-input dark:bg-white dark:text-slate-950">
-                        <CheckSquare className="h-5 w-5" />
-                    </div>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+                        <PixelMark size={30} />
+                    </span>
                     <div
                         className={cn(
                             "min-w-0 transition-all duration-200",
@@ -64,13 +57,13 @@ export const Sidebar = () => {
                         )}
                     >
                         <div className="logo-text-wrap">
-                            <span className="block truncate text-base font-semibold leading-tight text-foreground logo-text-main">
+                            <span className="font-pixel block truncate text-lg font-bold leading-tight text-foreground logo-text-main">
                                 TaskSystem
                             </span>
                         </div>
                         {versionLabel && (
                             <div className="flex items-center gap-1">
-                                <span className="font-mono text-[10px] leading-tight text-muted-foreground">
+                                <span className="hud text-[10px] leading-tight text-muted-foreground">
                                     {versionLabel}
                                 </span>
                                 <Popover>
@@ -111,18 +104,18 @@ export const Sidebar = () => {
                         title={!open ? item.title : undefined}
                         className={({ isActive }) =>
                             cn(
-                                "sidebar-nav-item relative flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-200",
-                                "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                "sidebar-nav-item hud px-chamfer relative flex h-11 items-center gap-3 border-2 px-3 text-xs transition-[background-color,border-color,color] duration-100 [transition-timing-function:steps(2,end)]",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                                 isActive
-                                    ? "bg-foreground text-background shadow-input dark:bg-white dark:text-slate-950"
-                                    : "text-muted-foreground"
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
                             )
                         }
                     >
-                        <item.icon className="h-5 w-5 shrink-0 sidebar-nav-icon" />
+                        <item.icon width={20} height={20} aria-hidden="true" className="shrink-0" />
                         <span
                             className={cn(
-                                "whitespace-nowrap transition-all duration-200",
+                                "whitespace-nowrap transition-opacity duration-150",
                                 open ? "translate-x-0 opacity-100" : "pointer-events-none -translate-x-2 opacity-0"
                             )}
                         >
@@ -132,20 +125,6 @@ export const Sidebar = () => {
                 ))}
             </nav>
 
-            <div className="border-t border-border p-3">
-                <div className="flex h-11 items-center gap-3 rounded-lg border border-border bg-background px-3">
-                    <Sparkles className="h-5 w-5 shrink-0 text-primary" />
-                    <div
-                        className={cn(
-                            "min-w-0 transition-all duration-200",
-                            open ? "translate-x-0 opacity-100" : "pointer-events-none -translate-x-2 opacity-0"
-                        )}
-                    >
-                        <p className="truncate text-sm font-medium text-foreground">Workspace</p>
-                        <p className="truncate text-xs text-muted-foreground">Active session</p>
-                    </div>
-                </div>
-            </div>
         </aside>
     );
 };

@@ -18,20 +18,22 @@ export function IssueLabelChips({ labels = [], max = 3, emptyText = null, classN
                 <Badge
                     key={`${getLabelName(label)}-${label?.id ?? index}`}
                     variant="outline"
-                    style={label?.color ? { backgroundColor: label.color, color: "#fff", borderColor: label.color } : {}}
-                    className={cn(
-                        "max-w-[9rem] truncate border-primary/25 bg-primary/5 px-2 py-0.5 text-[11px] text-primary",
-                        badgeClassName
-                    )}
+                    className={cn("max-w-[9rem] gap-1.5 px-1.5 py-px text-[11px] text-foreground/80", badgeClassName)}
                     title={getLabelName(label)}
                 >
-                    {getLabelName(label)}
+                    {/* The label's own color lives in the dot, so any user-picked color stays legible */}
+                    <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full"
+                        style={{ background: label?.color || "var(--color-primary)" }}
+                        aria-hidden="true"
+                    />
+                    <span className="truncate">{getLabelName(label)}</span>
                 </Badge>
             ))}
             {hiddenCount > 0 && (
                 <Badge
                     variant="secondary"
-                    className={cn("px-2 py-0.5 text-[11px]", badgeClassName)}
+                    className={cn("px-1.5 py-px text-[11px]", badgeClassName)}
                     title={`${hiddenCount} more label${hiddenCount === 1 ? "" : "s"}`}
                 >
                     +{hiddenCount}

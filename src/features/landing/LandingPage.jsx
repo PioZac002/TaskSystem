@@ -1,648 +1,513 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Card, CardContent } from "@/components/ui/Card";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
+import { PixelMark, Wordmark } from "@/components/arcade/PixelMark";
+import { StatusGlyph } from "@/components/arcade/StatusGlyph";
 import {
-    Zap,
-    Shield,
-    Users,
-    Rocket,
-    Code,
-    Layers,
-    CheckCircle,
-    ArrowRight,
-    MessageSquare,
-    BarChart3,
-    Github,
-    ChevronLeft,
-    ChevronRight,
-    X,
-} from "lucide-react";
-import tsimg1 from "@/assets/tsimg1.png";
-import tsimg2 from "@/assets/tsimg2.png";
-import tsimg3 from "@/assets/tsimg3.png";
+    IconArrowRight,
+    IconBoard,
+    IconComment,
+    IconGithub,
+    IconReload,
+    IconSkull,
+    IconSpawn,
+    IconTv,
+    IconUser,
+} from "@/components/arcade/icons";
+import { STATUS_LABELS } from "@/utils/issueConstants";
+import { cn } from "@/lib/utils";
+import dashboardDark from "@/assets/dashboard-screen-dark.jpg";
+import dashboardLight from "@/assets/dashboard-screen-light.jpg";
+import "./landing.css";
 
-gsap.registerPlugin(ScrollTrigger);
+const REPO_URL = "https://github.com/PioZac002/TaskSystemFront";
 
-const IMAGES = [tsimg1, tsimg2, tsimg3];
-const AUTO_DELAY = 4000;
+// The demo run: TS-12 through the real workflow. Positions are cells on a 4 x 2 stage map.
+const STAGES = [
+    { status: "NEW", col: 0, row: 0, log: "Mon 09:12 · Ola filed TS-12 in project TS" },
+    { status: "TRIAGE", col: 1, row: 0, log: "Mon 09:40 · Ola raised priority to High" },
+    { status: "TODO", col: 2, row: 0, log: "Mon 10:05 · Kuba assigned, notification sent" },
+    { status: "IN_PROGRESS", col: 3, row: 0, log: "Mon 13:30 · Kuba started work" },
+    { status: "WAITING_FOR_TEAM", col: 3, row: 1, log: "Tue 11:02 · Handed to Backend, @Marta pinged" },
+    { status: "CODE_REVIEW", col: 2, row: 1, log: "Wed 16:48 · Marta opened the review" },
+    { status: "DONE", col: 1, row: 1, log: "Thu 09:15 · Kuba merged and closed TS-12" },
+];
+const PIT = { status: "CANCELED", col: 0, row: 1, log: "TS-12 canceled. Run over." };
 
-export default function LandingPage() {
-    const navigate = useNavigate();
+const MOVES = [
+    { icon: IconSpawn, move: "File", text: "Open an issue under a project key. It spawns as TS-1, TS-2 and keeps that number for life." },
+    { icon: IconUser, move: "Assign", text: "Hand it to a player and a team. The assignee gets a notification." },
+    { icon: IconBoard, move: "Move", text: "Push it across the board by drag and drop, through eight states from New to Done." },
+    { icon: IconComment, move: "Log", text: "Comment with @mentions and pasted images. The activity log records every change." },
+];
 
-    // Carousel state
-    const [carouselIndex, setCarouselIndex] = useState(0);
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [lightboxIndex, setLightboxIndex] = useState(0);
-    const autoPlayRef = useRef(null);
+const BOARD_ISSUES = [
+    { key: "TS-9", title: "Empty state for labels", status: "NEW" },
+    { key: "TS-11", title: "Board flickers on move", status: "TRIAGE" },
+    { key: "TS-7", title: "Token expires mid-drag", status: "TODO" },
+    { key: "TS-10", title: "Assignee filter", status: "IN_PROGRESS" },
+    { key: "TS-12", title: "Slack ID lost on save", status: "WAITING_FOR_TEAM" },
+    { key: "TS-13", title: "Tag a user in a comment", status: "CODE_REVIEW" },
+    { key: "TS-8", title: "PWA icon set", status: "DONE" },
+    { key: "TS-5", title: "Weekly email digest", status: "CANCELED" },
+];
 
-    const startAutoPlay = useCallback(() => {
-        clearInterval(autoPlayRef.current);
-        autoPlayRef.current = setInterval(() => {
-            setCarouselIndex(prev => (prev + 1) % IMAGES.length);
-        }, AUTO_DELAY);
-    }, []);
+const BASIC_COLUMNS = [
+    { id: "todo", title: "To Do", statuses: ["NEW", "TRIAGE", "TODO"], lead: "TODO" },
+    { id: "progress", title: "In Progress", statuses: ["IN_PROGRESS", "WAITING_FOR_TEAM", "CODE_REVIEW"], lead: "IN_PROGRESS" },
+    { id: "done", title: "Done", statuses: ["DONE", "CANCELED"], lead: "DONE" },
+];
+// Short lane names, as the real board's Detailed mode shows them
+const LANE_TITLES = { WAITING_FOR_TEAM: "Waiting", CODE_REVIEW: "Review" };
+const DETAILED_COLUMNS = ["NEW", "TRIAGE", "TODO", "IN_PROGRESS", "WAITING_FOR_TEAM", "CODE_REVIEW", "DONE", "CANCELED"].map((status) => ({
+    id: status,
+    title: LANE_TITLES[status] || STATUS_LABELS[status],
+    statuses: [status],
+    lead: status,
+}));
 
-    useEffect(() => {
-        if (!lightboxOpen) startAutoPlay();
-        else clearInterval(autoPlayRef.current);
-        return () => clearInterval(autoPlayRef.current);
-    }, [lightboxOpen, startAutoPlay]);
+const SCREENS = [
+    { id: "dark", label: "Screen", src: dashboardDark, alt: "TaskSystem dashboard in dark mode: open, due and overdue counts, your issues, all stages and your projects", width: 1456, height: 834 },
+    { id: "light", label: "Printed card", src: dashboardLight, alt: "The same TaskSystem dashboard in light mode", width: 1456, height: 834 },
+];
 
-    const carouselPrev = (e) => {
-        e?.stopPropagation();
-        setCarouselIndex(prev => (prev - 1 + IMAGES.length) % IMAGES.length);
-        startAutoPlay();
-    };
-    const carouselNext = (e) => {
-        e?.stopPropagation();
-        setCarouselIndex(prev => (prev + 1) % IMAGES.length);
-        startAutoPlay();
-    };
+function readCrt() {
+    try {
+        return localStorage.getItem("crt") !== "off";
+    } catch {
+        return true;
+    }
+}
 
-    const openLightbox = () => {
-        setLightboxIndex(carouselIndex);
-        setLightboxOpen(true);
-    };
-    const closeLightbox = () => setLightboxOpen(false);
-    const lightboxPrev = () => setLightboxIndex(prev => (prev - 1 + IMAGES.length) % IMAGES.length);
-    const lightboxNext = () => setLightboxIndex(prev => (prev + 1) % IMAGES.length);
+// TS-12 as a sprite: a ticket stub with two punched eyes, 12 x 10 pixels
+const SPRITE_ROWS = [
+    "..########..",
+    ".##########.",
+    "############",
+    "###..##..###",
+    "###..##..###",
+    "############",
+    "############",
+    "#.##.##.##.#",
+    "#..#..#..#.#",
+    "..........#.",
+];
 
-    // Keyboard nav for lightbox
-    useEffect(() => {
-        if (!lightboxOpen) return;
-        const handler = (e) => {
-            if (e.key === "ArrowLeft") lightboxPrev();
-            if (e.key === "ArrowRight") lightboxNext();
-            if (e.key === "Escape") closeLightbox();
-        };
-        window.addEventListener("keydown", handler);
-        return () => window.removeEventListener("keydown", handler);
-    }, [lightboxOpen]);
-
-    // Refs for animation targets
-    const heroRef = useRef(null);
-    const heroBadgeRef = useRef(null);
-    const heroTitleRef = useRef(null);
-    const heroSubRef = useRef(null);
-    const heroCTARef = useRef(null);
-    const heroPreviewRef = useRef(null);
-    const featuresRef = useRef(null);
-    const stepsRef = useRef(null);
-    const techRef = useRef(null);
-    const ctaRef = useRef(null);
-
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            // Hero staggered entrance
-            const heroTl = gsap.timeline({ delay: 0.3 });
-            heroTl
-                .fromTo(heroBadgeRef.current,
-                    { opacity: 0, y: 20, scale: 0.95 },
-                    { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }
-                )
-                .fromTo(heroTitleRef.current,
-                    { opacity: 0, y: 40 },
-                    { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, "-=0.2"
-                )
-                .fromTo(heroSubRef.current,
-                    { opacity: 0, y: 30 },
-                    { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, "-=0.3"
-                )
-                .fromTo(heroCTARef.current,
-                    { opacity: 0, y: 20 },
-                    { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, "-=0.2"
-                )
-                .fromTo(heroPreviewRef.current,
-                    { opacity: 0, y: 60, scale: 0.97 },
-                    { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, "-=0.3"
-                );
-
-            // Features cards stagger on scroll
-            if (featuresRef.current) {
-                const cards = featuresRef.current.querySelectorAll(".feature-card");
-                gsap.fromTo(cards,
-                    { opacity: 0, y: 50 },
-                    {
-                        opacity: 1, y: 0,
-                        duration: 0.6,
-                        stagger: 0.1,
-                        ease: "power3.out",
-                        scrollTrigger: {
-                            trigger: featuresRef.current,
-                            start: "top 80%",
-                        }
-                    }
-                );
-                const heading = featuresRef.current.querySelector(".section-heading");
-                gsap.fromTo(heading,
-                    { opacity: 0, y: 30 },
-                    {
-                        opacity: 1, y: 0, duration: 0.6, ease: "power3.out",
-                        scrollTrigger: { trigger: featuresRef.current, start: "top 85%" }
-                    }
-                );
-            }
-
-            // Steps stagger on scroll
-            if (stepsRef.current) {
-                const items = stepsRef.current.querySelectorAll(".step-item");
-                gsap.fromTo(items,
-                    { opacity: 0, y: 40 },
-                    {
-                        opacity: 1, y: 0,
-                        duration: 0.6,
-                        stagger: 0.18,
-                        ease: "power3.out",
-                        scrollTrigger: { trigger: stepsRef.current, start: "top 80%" }
-                    }
-                );
-            }
-
-            // Tech tiles stagger
-            if (techRef.current) {
-                const tiles = techRef.current.querySelectorAll(".tech-tile");
-                gsap.fromTo(tiles,
-                    { opacity: 0, scale: 0.85 },
-                    {
-                        opacity: 1, scale: 1,
-                        duration: 0.5,
-                        stagger: 0.07,
-                        ease: "back.out(1.4)",
-                        scrollTrigger: { trigger: techRef.current, start: "top 80%" }
-                    }
-                );
-            }
-
-            // CTA section
-            if (ctaRef.current) {
-                gsap.fromTo(ctaRef.current,
-                    { opacity: 0, y: 40, scale: 0.97 },
-                    {
-                        opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power3.out",
-                        scrollTrigger: { trigger: ctaRef.current, start: "top 85%" }
-                    }
-                );
-            }
+function TicketSprite({ className }) {
+    const pixels = [];
+    SPRITE_ROWS.forEach((row, y) => {
+        [...row].forEach((cell, x) => {
+            if (cell === "#") pixels.push(<rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" />);
         });
+    });
+    return (
+        <svg viewBox="0 0 12 10" shapeRendering="crispEdges" aria-hidden="true" className={className} fill="currentColor">
+            {pixels}
+        </svg>
+    );
+}
 
-        return () => ctx.revert();
-    }, []);
+function Playfield({ crt, onStageChange }) {
+    const [stage, setStage] = useState(0);
+    const [canceled, setCanceled] = useState(false);
+    const [flashKey, setFlashKey] = useState(0);
+    const cleared = !canceled && stage === STAGES.length - 1;
+    const current = canceled ? PIT : STAGES[stage];
 
-    const scrollToSection = (id) => {
-        const element = document.getElementById(id);
-        if (element) element.scrollIntoView({ behavior: "smooth" });
+    useEffect(() => {
+        onStageChange?.({ stage, canceled, status: current.status });
+    }, [stage, canceled, current.status, onStageChange]);
+
+    const advance = useCallback(() => {
+        if (canceled || cleared) return;
+        const next = stage + 1;
+        setStage(next);
+        if (next === STAGES.length - 1) setFlashKey((k) => k + 1);
+    }, [canceled, cleared, stage]);
+
+    const reset = () => {
+        setStage(0);
+        setCanceled(false);
     };
 
-    const features = [
-        { icon: Rocket, title: "Project Management", description: "Organize projects with intuitive tools and streamlined workflows designed for modern teams." },
-        { icon: CheckCircle, title: "Issue Tracking", description: "Track tasks, bugs, and features with customizable workflows and smart priority management." },
-        { icon: Users, title: "Team Collaboration", description: "Seamless collaboration with team assignments, shared workspaces, and role-based access." },
-        { icon: Zap, title: "Real-time Updates", description: "Stay in sync with instant notifications and live updates across your entire team." },
-        { icon: MessageSquare, title: "Smart Comments", description: "Contextual discussions with threaded comments and inline feedback on every task." },
-        { icon: BarChart3, title: "Analytics Dashboard", description: "Data-driven insights with comprehensive reporting and team performance metrics." },
-    ];
+    const abandon = () => {
+        if (!canceled && !cleared) setCanceled(true);
+    };
 
-    const steps = [
-        { number: "01", title: "Create Account", description: "Sign up in seconds with email or social login." },
-        { number: "02", title: "Setup Project", description: "Configure workflows and invite your team members." },
-        { number: "03", title: "Start Shipping", description: "Track progress and deliver results faster than ever." },
-    ];
+    const handleKeyDown = (event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === " " || event.key === "ArrowRight") {
+            event.preventDefault();
+            if (canceled || cleared) reset();
+            else advance();
+        }
+    };
 
-    const techStack = [
-        { name: "React 18", icon: Code },
-        { name: "TypeScript", icon: Code },
-        { name: "Tailwind CSS", icon: Layers },
-        { name: "Spring Boot", icon: Shield },
-        { name: "PostgreSQL", icon: Layers },
-        { name: "JWT Auth", icon: Shield },
-    ];
+    const log = (canceled ? [...STAGES.slice(0, stage + 1), PIT] : STAGES.slice(0, stage + 1)).slice(-3);
 
     return (
-        <div className="min-h-screen bg-white text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-50">
+        <div
+            className={cn("lp-playfield px-chamfer-lg relative border-2 border-border bg-card", cleared && "is-cleared", canceled && "is-over")}
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
+            aria-label="Demo run of issue TS-12. Press Space to move it to the next stage."
+        >
+            <div className="flex items-center justify-between gap-3 border-b-2 border-border px-4 py-2.5">
+                <span className="hud text-[0.6875rem] text-muted-foreground">Demo run · sample data</span>
+                <span className="hud text-[0.6875rem]">
+                    TS-12 · <span className="text-[var(--px-red)]">High</span>
+                </span>
+            </div>
 
-            {/* Navigation */}
-            <nav
-                className="fixed top-0 w-full z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 animate-nav-in transition-colors duration-300"
-            >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16 gap-4">
-                        {/* Logo */}
-                        <div className="flex min-w-0 items-center gap-2">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 dark:bg-white">
-                                <Layers className="h-5 w-5 text-white dark:text-slate-900" />
+            <div className={cn("relative px-tiles", crt && "px-scanlines")}>
+                <div className="lp-map relative grid aspect-[4/3] grid-cols-4 grid-rows-2 sm:aspect-[2/1]">
+                    {[...STAGES, PIT].map((tile, index) => {
+                        const isPit = tile === PIT;
+                        const isHere = tile.status === current.status;
+                        const visited = !isPit && (canceled ? index <= stage : index < stage);
+                        return (
+                            <div
+                                key={tile.status}
+                                className={cn("p-1.5 sm:p-2", `st-${tile.status}`)}
+                                style={{ gridColumn: tile.col + 1, gridRow: tile.row + 1 }}
+                            >
+                                <div
+                                    className={cn(
+                                        "lp-tile px-chamfer relative flex h-full flex-col justify-between border-2 p-2 sm:p-2.5",
+                                        isHere ? "is-here" : visited ? "is-visited" : "",
+                                        isPit && "is-pit"
+                                    )}
+                                >
+                                    <span className="hud flex items-center justify-between text-[0.625rem] text-muted-foreground">
+                                        <span className="hidden sm:inline">{isPit ? "Game over" : `Stage ${index + 1}`}</span>
+                                        <StatusGlyph status={tile.status} size={16} />
+                                    </span>
+                                    <span className="font-pixel text-[0.75rem] font-bold leading-tight sm:text-base">
+                                        {STATUS_LABELS[tile.status]}
+                                    </span>
+                                </div>
                             </div>
-                            <span className="text-xl font-bold text-slate-900 dark:text-white">TaskSystem</span>
-                        </div>
+                        );
+                    })}
 
-                        {/* Nav links */}
-                        <div className="hidden md:flex items-center gap-8">
-                            <button
-                                onClick={() => scrollToSection("features")}
-                                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium"
-                            >
-                                Features
-                            </button>
-                            <button
-                                onClick={() => scrollToSection("how-it-works")}
-                                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium"
-                            >
-                                How it works
-                            </button>
-                            <button
-                                onClick={() => scrollToSection("tech-stack")}
-                                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium"
-                            >
-                                Technology
-                            </button>
-                        </div>
-
-                        <div className="flex shrink-0 items-center">
-                            <ThemeToggle />
-                        </div>
+                    {/* The sprite travels between cells in whole-pixel steps */}
+                    <div
+                        className="lp-sprite pointer-events-none absolute left-0 top-0 grid h-1/2 w-1/4 place-items-center"
+                        style={{ transform: `translate(${current.col * 100}%, ${current.row * 100}%)` }}
+                        aria-hidden="true"
+                    >
+                        <TicketSprite className={cn("lp-sprite-art st-ink h-9 w-11 sm:h-11 sm:w-14", `st-${current.status}`)} />
                     </div>
                 </div>
-            </nav>
 
-            {/* Hero Section */}
-            <section ref={heroRef} className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center max-w-4xl mx-auto space-y-8">
+                {cleared && <div key={flashKey} className="px-flash pointer-events-none absolute inset-0" aria-hidden="true" />}
+                {cleared && (
+                    <p className="lp-banner hud absolute inset-x-0 top-1/2 mx-auto w-max -translate-y-1/2 border-2 border-[var(--px-gold)] bg-background px-4 py-2 text-sm text-[var(--px-gold)]" role="status">
+                        Stage clear · TS-12 done
+                    </p>
+                )}
+                {canceled && (
+                    <p className="lp-banner hud absolute inset-x-0 top-1/2 mx-auto flex w-max -translate-y-1/2 items-center gap-2 border-2 border-[var(--px-red)] bg-background px-4 py-2 text-sm text-[var(--px-red)]" role="status">
+                        <IconSkull width={16} height={16} aria-hidden="true" /> Game over · canceled
+                    </p>
+                )}
+            </div>
 
-                        <div ref={heroBadgeRef} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                            <Zap className="h-4 w-4 text-slate-900 dark:text-white" />
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                Modern Task Management Platform
-                            </span>
-                        </div>
+            <ol className="min-h-[5.25rem] space-y-1 border-t-2 border-border px-4 py-3 text-[0.8125rem]" aria-live="polite">
+                {log.map((entry, i) => (
+                    <li key={entry.log} className={cn("flex items-center gap-2", i < log.length - 1 && "text-muted-foreground")}>
+                        <StatusGlyph status={entry.status} size={14} />
+                        {entry.log}
+                    </li>
+                ))}
+            </ol>
 
-                        <h1 ref={heroTitleRef} className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white leading-tight tracking-tight">
-                            Ship faster with
-                            <span className="block mt-2 bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
-                                better task management
-                            </span>
-                        </h1>
+            <div className="flex flex-wrap items-center gap-2 border-t-2 border-border px-4 py-3">
+                {canceled || cleared ? (
+                    <button type="button" onClick={reset} className="lp-btn lp-btn-primary">
+                        <IconReload width={16} height={16} aria-hidden="true" /> Play again
+                    </button>
+                ) : (
+                    <button type="button" onClick={advance} className="lp-btn lp-btn-primary">
+                        Next stage <kbd className="lp-kbd">Space</kbd>
+                    </button>
+                )}
+                {!canceled && !cleared && (
+                    <button type="button" onClick={abandon} className="lp-btn lp-btn-ghost">
+                        Cancel issue
+                    </button>
+                )}
+                <span className="hud ml-auto text-[0.6875rem] text-muted-foreground">
+                    {canceled ? "Canceled" : `Stage ${stage + 1} / ${STAGES.length}`}
+                </span>
+            </div>
+        </div>
+    );
+}
 
-                        <p ref={heroSubRef} className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                            Streamline your workflow with an intuitive platform designed for modern teams.
-                            Track progress, collaborate seamlessly, and deliver exceptional results.
-                        </p>
+function ModeSelect() {
+    const [mode, setMode] = useState("basic");
+    const columns = mode === "basic" ? BASIC_COLUMNS : DETAILED_COLUMNS;
 
-                        <div ref={heroCTARef} className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-                            <button
-                                type="button"
-                                onClick={() => navigate("/register")}
-                                className="inline-flex items-center justify-center h-11 px-8 rounded-md text-base font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-slate-100 transition-colors duration-200"
-                            >
-                                Start for free
-                                <ArrowRight className="ml-2 h-4 w-4" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate("/login")}
-                                className="inline-flex items-center justify-center h-11 px-8 rounded-md text-base font-semibold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200"
-                            >
-                                Sign in
-                            </button>
-                        </div>
-
-                        <div className="pt-4 flex items-center justify-center gap-8 text-sm text-slate-500 dark:text-slate-500">
-                            <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                <span>No credit card required</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                <span>Free forever plan</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Hero preview — auto-scroll carousel */}
-                    <div
-                        ref={heroPreviewRef}
-                        className="mt-20 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-3 shadow-2xl"
-                    >
-                        {/* Carousel wrapper */}
-                        <div
-                            className="relative rounded-lg overflow-hidden cursor-pointer group"
-                            onClick={openLightbox}
-                            title="Click to enlarge"
+    return (
+        <div>
+            <div role="radiogroup" aria-label="Board mode" className="grid gap-3 sm:grid-cols-2">
+                {[
+                    { id: "basic", player: "1P", title: "Basic", text: "Three columns for standup. New, Triage and To Do share a lane." },
+                    { id: "detailed", player: "2P", title: "Detailed", text: "Eight lanes. Waiting and Review stop hiding inside In Progress." },
+                ].map((option) => {
+                    const active = mode === option.id;
+                    return (
+                        <button
+                            key={option.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setMode(option.id)}
+                            className={cn("lp-select px-chamfer grid grid-cols-[2.5rem_1fr] gap-x-3 border-2 p-4 text-left", active && "is-active")}
                         >
-                            {/* Slides */}
-                            <div
-                                className="flex transition-transform duration-700 ease-in-out"
-                                style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
-                            >
-                                {IMAGES.map((src, i) => (
-                                    <img
-                                        key={i}
-                                        src={src}
-                                        alt={`Screenshot ${i + 1}`}
-                                        className="w-full shrink-0 object-cover aspect-video select-none"
-                                        draggable={false}
-                                    />
-                                ))}
-                            </div>
+                            <span className="lp-cursor hud row-span-2 self-center text-base" aria-hidden="true">
+                                {option.player}
+                            </span>
+                            <span className="font-pixel text-2xl font-bold leading-none">{option.title}</span>
+                            <span className="mt-1.5 text-sm text-muted-foreground">{option.text}</span>
+                        </button>
+                    );
+                })}
+            </div>
 
-                            {/* Hover overlay */}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-sm font-medium bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-sm">
-                                    Click to enlarge
-                                </span>
-                            </div>
-
-                            {/* Prev / Next arrows */}
-                            <button
-                                onClick={carouselPrev}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                aria-label="Previous"
-                            >
-                                <ChevronLeft className="h-5 w-5" />
-                            </button>
-                            <button
-                                onClick={carouselNext}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                aria-label="Next"
-                            >
-                                <ChevronRight className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        {/* Dot indicators */}
-                        <div className="flex justify-center gap-2 mt-3 pb-1">
-                            {IMAGES.map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => { setCarouselIndex(i); startAutoPlay(); }}
-                                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                                        i === carouselIndex
-                                            ? "w-6 bg-slate-700 dark:bg-slate-300"
-                                            : "w-1.5 bg-slate-300 dark:bg-slate-600 hover:bg-slate-500 dark:hover:bg-slate-400"
-                                    }`}
-                                    aria-label={`Go to slide ${i + 1}`}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Features Section */}
-            <section id="features" ref={featuresRef} className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-900/50">
-                <div className="max-w-7xl mx-auto">
-                    <div className="section-heading text-center mb-16 space-y-4">
-                        <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
-                            Everything you need
-                        </h2>
-                        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                            Powerful features designed to help your team work smarter, not harder
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {features.map((feature, index) => (
-                            <Card
-                                key={index}
-                                className="feature-card group border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                            >
-                                <CardContent className="p-6">
-                                    <div className="space-y-4">
-                                        <div className="h-12 w-12 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-slate-900 dark:group-hover:bg-white transition-colors duration-300">
-                                            <feature.icon className="h-6 w-6 text-slate-700 dark:text-slate-300 group-hover:text-white dark:group-hover:text-slate-900 transition-colors duration-300" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                                                {feature.title}
-                                            </h3>
-                                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                                                {feature.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* How It Works Section */}
-            <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8">
-                <div ref={stepsRef} className="max-w-7xl mx-auto">
-                    <div className="step-item text-center mb-16 space-y-4">
-                        <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
-                            Get started in minutes
-                        </h2>
-                        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                            Three simple steps to transform your team's productivity
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
-                        <div className="hidden md:block absolute top-12 left-[16.66%] right-[16.66%] h-px bg-slate-200 dark:bg-slate-800" />
-
-                        {steps.map((step, index) => (
-                            <div key={index} className="step-item relative text-center space-y-4">
-                                <div className="relative inline-block">
-                                    <div className="w-24 h-24 mx-auto rounded-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 flex items-center justify-center relative z-10">
-                                        <span className="text-3xl font-bold text-slate-900 dark:text-white">
-                                            {step.number}
-                                        </span>
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
-                                    {step.title}
-                                </h3>
-                                <p className="text-slate-600 dark:text-slate-400">
-                                    {step.description}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Tech Stack Section */}
-            <section id="tech-stack" className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-900/50">
-                <div ref={techRef} className="max-w-7xl mx-auto">
-                    <div className="tech-tile text-center mb-16 space-y-4">
-                        <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
-                            Built with modern technology
-                        </h2>
-                        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                            Powered by industry-leading tools and frameworks
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {techStack.map((tech, index) => (
-                            <div
-                                key={index}
-                                className="tech-tile p-6 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-center"
-                            >
-                                <tech.icon className="h-8 w-8 mx-auto mb-3 text-slate-700 dark:text-slate-300" />
-                                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                                    {tech.name}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA Section */}
-            <section className="py-24 px-4 sm:px-6 lg:px-8">
-                <div ref={ctaRef} className="max-w-4xl mx-auto">
-                    <Card className="border-slate-200 dark:border-slate-800 bg-slate-900 dark:bg-white overflow-hidden">
-                        <CardContent className="p-12 text-center">
-                            <h2 className="text-4xl sm:text-5xl font-bold text-white dark:text-slate-900 mb-6 tracking-tight">
-                                Ready to get started?
-                            </h2>
-                            <p className="text-xl text-slate-300 dark:text-slate-600 mb-8 max-w-2xl mx-auto">
-                                Join teams worldwide who are already shipping faster with TaskSystem
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate("/register")}
-                                    className="inline-flex items-center justify-center h-11 px-8 rounded-md text-base font-semibold bg-white dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-200"
-                                >
-                                    Create free account
-                                    <ArrowRight className="ml-2 h-4 w-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => navigate("/login")}
-                                    className="inline-flex items-center justify-center h-11 px-8 rounded-md text-base font-semibold border border-slate-600 dark:border-slate-300 text-slate-200 dark:text-slate-800 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors duration-200"
-                                >
-                                    Sign in
-                                </button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </section>
-
-            {/* Lightbox */}
-            {lightboxOpen && (
+            <div className="lp-board-scroll mt-4 overflow-x-auto pb-2">
                 <div
-                    className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center"
-                    onClick={closeLightbox}
+                    className={cn("grid gap-2", mode === "basic" ? "min-w-[640px] grid-cols-3" : "min-w-[1040px] grid-cols-8")}
+                    aria-label={`${mode === "basic" ? "Basic" : "Detailed"} board preview`}
                 >
-                    {/* Close */}
-                    <button
-                        onClick={closeLightbox}
-                        className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
-                        aria-label="Close"
-                    >
-                        <X className="h-5 w-5" />
-                    </button>
-
-                    {/* Prev */}
-                    <button
-                        onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
-                        className="absolute left-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
-                        aria-label="Previous"
-                    >
-                        <ChevronLeft className="h-7 w-7" />
-                    </button>
-
-                    {/* Image */}
-                    <div
-                        className="max-w-5xl w-full mx-16 rounded-xl overflow-hidden shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <img
-                            src={IMAGES[lightboxIndex]}
-                            alt={`Screenshot ${lightboxIndex + 1}`}
-                            className="w-full h-auto object-contain select-none"
-                            draggable={false}
-                        />
-                    </div>
-
-                    {/* Next */}
-                    <button
-                        onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
-                        className="absolute right-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
-                        aria-label="Next"
-                    >
-                        <ChevronRight className="h-7 w-7" />
-                    </button>
-
-                    {/* Dot indicators */}
-                    <div className="absolute bottom-6 flex gap-2">
-                        {IMAGES.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                                className={`h-2 rounded-full transition-all duration-300 ${
-                                    i === lightboxIndex ? "w-8 bg-white" : "w-2 bg-white/40 hover:bg-white/70"
-                                }`}
-                                aria-label={`Go to slide ${i + 1}`}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Footer */}
-            <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-slate-800">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 dark:bg-white">
-                                    <Layers className="h-4 w-4 text-white dark:text-slate-900" />
+                    {columns.map((column) => {
+                        const issues = BOARD_ISSUES.filter((issue) => column.statuses.includes(issue.status));
+                        return (
+                            <div key={column.id} className={cn("lp-col border-2 bg-card p-2", `st-${column.lead}`)}>
+                                <div className="hud mb-2 flex items-center justify-between gap-2 border-b-2 border-border pb-2 text-[0.6875rem]">
+                                    <span className="flex min-w-0 items-center gap-1.5">
+                                        <StatusGlyph status={column.lead} size={14} />
+                                        <span className="truncate">{column.title}</span>
+                                    </span>
+                                    <span className="text-muted-foreground">{issues.length}</span>
                                 </div>
-                                <span className="text-lg font-bold text-slate-900 dark:text-white">TaskSystem</span>
+                                <ul className="space-y-1.5">
+                                    {issues.map((issue) => (
+                                        <li key={issue.key} className={cn("lp-card border-2 px-2 py-1.5", `st-${issue.status}`, issue.key === "TS-12" && mode === "detailed" && "is-spot")}>
+                                            <span className="hud flex items-center gap-1 text-[0.625rem] text-muted-foreground">
+                                                <StatusGlyph status={issue.status} size={12} />
+                                                {issue.key}
+                                            </span>
+                                            <span className="mt-0.5 block text-[0.8125rem] leading-snug">{issue.title}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                                Modern task management for modern teams
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ScreenBezel({ crt }) {
+    const [screenId, setScreenId] = useState(SCREENS[0].id);
+    const screen = SCREENS.find((s) => s.id === screenId);
+
+    return (
+        <div className="lp-bezel px-chamfer-lg border-2 border-border bg-card p-2 sm:p-3">
+            <div role="tablist" aria-label="Dashboard themes" className="mb-2 flex flex-wrap gap-2 sm:mb-3">
+                {SCREENS.map((s) => (
+                    <button
+                        key={s.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={s.id === screenId}
+                        onClick={() => setScreenId(s.id)}
+                        className={cn("lp-btn", s.id === screenId ? "lp-btn-primary" : "lp-btn-ghost")}
+                    >
+                        {s.label}
+                    </button>
+                ))}
+            </div>
+            <div className={cn("relative overflow-hidden border-2 border-border bg-black", crt && "px-scanlines")} role="tabpanel">
+                <img src={screen.src} alt={screen.alt} width={screen.width} height={screen.height} loading="lazy" className="block h-auto w-full" />
+            </div>
+        </div>
+    );
+}
+
+export default function LandingPage() {
+    const [crt, setCrt] = useState(readCrt);
+    const [run, setRun] = useState({ stage: 0, canceled: false, status: "NEW" });
+
+    const toggleCrt = () => {
+        setCrt((on) => {
+            const next = !on;
+            try {
+                localStorage.setItem("crt", next ? "on" : "off");
+            } catch {
+                // Storage unavailable: applies for this visit only
+            }
+            return next;
+        });
+    };
+
+    return (
+        <div className="lp min-h-dvh bg-background text-foreground">
+            <a href="#main" className="hud sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground">
+                Skip to content
+            </a>
+
+            <header className="sticky top-0 z-50 border-b-2 border-border bg-background">
+                <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-4 sm:px-6">
+                    <Link to="/" aria-label="TaskSystem home" className="shrink-0">
+                        <Wordmark size={26} />
+                    </Link>
+
+                    <p className="hud hidden flex-1 items-center justify-center gap-5 text-[0.6875rem] text-muted-foreground lg:flex" aria-hidden="true">
+                        <span>1UP</span>
+                        <span className={cn("flex items-center gap-1.5", `st-${run.status}`)}>
+                            TS-12 <StatusGlyph status={run.status} size={12} />
+                            <span className="st-ink">{STATUS_LABELS[run.status]}</span>
+                        </span>
+                        <span>{run.canceled ? "Game over" : `Stage ${run.stage + 1}/${STAGES.length}`}</span>
+                    </p>
+
+                    <nav aria-label="Main" className="ml-auto flex items-center gap-2 lg:ml-0">
+                        <a href="#how" className="lp-navlink hud hidden text-xs md:inline-flex">How to play</a>
+                        <a href="#modes" className="lp-navlink hud hidden text-xs md:inline-flex">Modes</a>
+                        <button
+                            type="button"
+                            onClick={toggleCrt}
+                            aria-pressed={crt}
+                            className="lp-btn lp-btn-ghost hidden sm:inline-flex"
+                            title="Scanlines on the demo and screens"
+                        >
+                            <IconTv width={16} height={16} aria-hidden="true" /> CRT
+                        </button>
+                        <ThemeToggle />
+                        <Link to="/login" className="lp-btn lp-btn-ghost hidden sm:inline-flex">Sign in</Link>
+                        <Link to="/register" className="lp-btn lp-btn-primary">Start</Link>
+                    </nav>
+                </div>
+            </header>
+
+            <main id="main">
+                {/* Attract screen */}
+                <section className="border-b-2 border-border">
+                    <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-4 py-14 sm:px-6 lg:min-h-[calc(100dvh-4rem)] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14 lg:py-16">
+                        <div className="min-w-0">
+                            <h1 className="lp-title px-display px-bloom">
+                                Ship every <span className="lp-title-accent">issue.</span>
+                            </h1>
+                            <p className="mt-6 max-w-[34rem] text-lg leading-relaxed text-muted-foreground">
+                                A self-hosted issue tracker with eight states from New to Done, where Waiting and Review stay in plain sight.
+                            </p>
+                            <div className="mt-8 flex flex-wrap items-center gap-3">
+                                <Link to="/register" className="lp-btn lp-btn-primary lp-btn-lg">
+                                    Press start <IconArrowRight width={18} height={18} aria-hidden="true" />
+                                </Link>
+                                <a href={REPO_URL} target="_blank" rel="noreferrer" className="lp-btn lp-btn-ghost lp-btn-lg">
+                                    <IconGithub width={18} height={18} aria-hidden="true" /> Player 2: self-host
+                                </a>
+                            </div>
+                            <p className="mt-5 text-sm text-muted-foreground">
+                                Already on a team?{" "}
+                                <Link to="/login" className="lp-textlink">Sign in</Link>
                             </p>
                         </div>
+
+                        <Playfield crt={crt} onStageChange={setRun} />
+                    </div>
+                </section>
+
+                {/* Instruction card */}
+                <section id="how" className="lp-card-section border-b-2 border-border">
+                    <div className="mx-auto grid max-w-[1280px] gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14 lg:py-28">
                         <div>
-                            <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Product</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><a href="#features" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Features</a></li>
-                                <li><a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Pricing</a></li>
-                                <li><a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Roadmap</a></li>
-                            </ul>
+                            <h2 className="text-3xl leading-tight sm:text-4xl">How to play</h2>
+                            <p className="mt-4 max-w-sm text-base leading-relaxed text-muted-foreground">
+                                Four moves run the whole game. Everything else is keyboard, board and a history you can trust.
+                            </p>
                         </div>
-                        <div>
-                            <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Resources</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Documentation</a></li>
-                                <li><a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">API Reference</a></li>
-                                <li><a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Support</a></li>
-                            </ul>
+                        <dl className="lp-moves border-2 border-border bg-card">
+                            {MOVES.map(({ icon, move, text }) => {
+                                const MoveIcon = icon;
+                                return (
+                                <div key={move} className="grid grid-cols-[3rem_minmax(0,1fr)] items-start gap-x-4 gap-y-1 border-b-2 border-border p-4 last:border-b-0 sm:grid-cols-[3rem_8rem_minmax(0,1fr)] sm:items-center sm:p-5">
+                                    <span className="lp-move-icon grid h-12 w-12 place-items-center border-2 border-border bg-background">
+                                        <MoveIcon width={24} height={24} aria-hidden="true" />
+                                    </span>
+                                    <dt className="font-pixel text-2xl font-bold leading-none">{move}</dt>
+                                    <dd className="col-start-2 text-base leading-relaxed text-muted-foreground sm:col-start-3">{text}</dd>
+                                </div>
+                                );
+                            })}
+                        </dl>
+                    </div>
+                </section>
+
+                {/* Mode select */}
+                <section id="modes" className="border-b-2 border-border">
+                    <div className="mx-auto max-w-[1280px] px-4 py-20 sm:px-6 lg:py-28">
+                        <div className="mb-8 max-w-2xl">
+                            <h2 className="text-3xl leading-tight sm:text-4xl">Select your board</h2>
+                            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+                                Same issues, two levels of detail. Switch whenever standup turns into a hunt for what is blocked.
+                            </p>
                         </div>
+                        <ModeSelect />
+                    </div>
+                </section>
+
+                {/* Real screens */}
+                <section id="screens" className="border-b-2 border-border">
+                    <div className="mx-auto grid max-w-[1280px] items-start gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,9fr)] lg:gap-14 lg:py-28">
                         <div>
-                            <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Company</h4>
-                            <ul className="space-y-2 text-sm">
-                                <li><a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">About</a></li>
-                                <li><a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Blog</a></li>
-                                <li>
-                                    <a href="https://github.com" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1">
-                                        <Github className="h-4 w-4" />
-                                        GitHub
-                                    </a>
-                                </li>
-                            </ul>
+                            <h2 className="text-3xl leading-tight sm:text-4xl">On screen now</h2>
+                            <p className="mt-4 max-w-xs text-base leading-relaxed text-muted-foreground">
+                                The dashboard from a local instance with sample projects, on the dark screen and the printed card.
+                            </p>
+                        </div>
+                        <ScreenBezel crt={crt} />
+                    </div>
+                </section>
+
+                {/* Insert coin */}
+                <section className="lp-close">
+                    <div className="mx-auto flex max-w-[1280px] flex-col items-start gap-8 px-4 py-24 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:py-32">
+                        <div>
+                            <h2 className="lp-close-title px-display px-bloom">
+                                Press start<span className="lp-caret" aria-hidden="true" />
+                            </h2>
+                            <p className="mt-4 max-w-lg text-base leading-relaxed text-muted-foreground">
+                                Create an account on the demo, or take the source and run TaskSystem on your own infrastructure.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Link to="/register" className="lp-btn lp-btn-primary lp-btn-lg">Create account</Link>
+                            <Link to="/login" className="lp-btn lp-btn-ghost lp-btn-lg">Sign in</Link>
+                            <a href={REPO_URL} target="_blank" rel="noreferrer" className="lp-btn lp-btn-ghost lp-btn-lg">
+                                <IconGithub width={18} height={18} aria-hidden="true" /> Source
+                            </a>
                         </div>
                     </div>
-                    <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                            © 2026 TaskSystem. All rights reserved.
-                        </p>
-                        <div className="flex gap-6 text-sm">
-                            <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Privacy</a>
-                            <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Terms</a>
-                            <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Cookies</a>
-                        </div>
-                    </div>
+                </section>
+            </main>
+
+            <footer className="border-t-2 border-border">
+                <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <span className="flex items-center gap-2">
+                        <PixelMark size={18} />
+                        <span className="hud text-[0.6875rem] text-muted-foreground">© {new Date().getFullYear()} TaskSystem</span>
+                    </span>
+                    <span className="hud text-[0.6875rem] text-muted-foreground">React 19 · Spring Boot · self-hosted</span>
+                    <a href={REPO_URL} target="_blank" rel="noreferrer" className="lp-navlink hud inline-flex items-center gap-1.5 text-[0.6875rem]">
+                        <IconGithub width={14} height={14} aria-hidden="true" /> GitHub
+                    </a>
                 </div>
             </footer>
         </div>

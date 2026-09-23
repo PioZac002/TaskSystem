@@ -1,0 +1,22 @@
+[
+  {
+    "date": "2026-09-16",
+    "page": "dashboard",
+    "macrostructure": "App shell",
+    "nav": "existing sidebar+topbar",
+    "hero": "none (greeting + live summary)",
+    "footer": "none",
+    "knobs": "stat strip; 8/4 split: your issues | status breakdown + your projects; recent projects 3-up flip cards; modes default/custom/jira kept",
+    "brief": "TaskSystem \u00b7 dashboard"
+  },
+  {
+    "date": "2026-09-16",
+    "page": "landing",
+    "macrostructure": "Product Demo / Workbench",
+    "nav": "product-bar",
+    "hero": "statement-over-bleed-shot",
+    "footer": "single-row-colophon",
+    "knobs": "hero=left/statement-top/shot-bleed-right; demo=interactive board flip; proof=overlapping screenshots",
+    "brief": "TaskSystem \u00b7 issue tracker"
+  }
+]

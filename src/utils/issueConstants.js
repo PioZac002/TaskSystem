@@ -19,19 +19,19 @@ export const PRIORITY_LABELS = {
 export const ALL_STATUSES = ["NEW", "TRIAGE", "TODO", "IN_PROGRESS", "WAITING_FOR_TEAM", "CODE_REVIEW", "DONE", "CANCELED"];
 export const ALL_PRIORITIES = ["LOW", "NORMAL", "HIGH", "CRITICAL"];
 
-export const getStatusBadgeClass = (status) => {
-    switch (status) {
-        case "DONE": return "bg-green-500 text-white";
-        case "IN_PROGRESS": return "bg-blue-500 text-white";
-        case "CODE_REVIEW": return "bg-purple-500 text-white";
-        case "WAITING_FOR_TEAM": return "bg-orange-500 text-white";
-        case "TRIAGE": return "bg-yellow-500 text-white";
-        case "TODO": return "bg-slate-500 text-white";
-        case "CANCELED": return "bg-red-400 text-white";
-        case "NEW": return "bg-gray-500 text-white";
-        default: return "bg-gray-400 text-white";
-    }
+// Status sprite colors live as CSS tokens (src/styles/arcade.css) so both themes stay legible
+export const STATUS_COLORS = {
+    NEW: "var(--st-new)",
+    TRIAGE: "var(--st-triage)",
+    TODO: "var(--st-todo)",
+    IN_PROGRESS: "var(--st-progress)",
+    WAITING_FOR_TEAM: "var(--st-waiting)",
+    CODE_REVIEW: "var(--st-review)",
+    DONE: "var(--st-done)",
+    CANCELED: "var(--st-canceled)",
 };
+
+export const getStatusBadgeClass = (status) => `st-chip st-${ALL_STATUSES.includes(status) ? status : "NEW"}`;
 
 export const getPriorityBadgeVariant = (priority) => {
     switch (priority) {
@@ -44,7 +44,7 @@ export const getPriorityBadgeVariant = (priority) => {
 };
 
 export const getPriorityBadgeClass = (priority) => {
-    if (priority === "CRITICAL") return "ring-2 ring-red-600";
+    if (priority === "CRITICAL") return "font-semibold";
     if (priority === "HIGH") return "";
     return "";
 };

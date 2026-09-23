@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, LogOut, Settings, Menu, X } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, FolderKanban, ListTodo, Trello, UserCircle, Users, Tag } from "lucide-react";
+import { IconBoard, IconFolder, IconHome, IconIssues, IconLabel, IconLogout, IconMenu, IconClose, IconSearch, IconSettings, IconUser, IconUsers } from "@/components/arcade/icons";
 import { useAuthStore } from "@/store/authStore";
 import { useSearchStore } from "@/store/searchStore";
 import { useProjectStore } from "@/store/projectStore";
@@ -26,13 +25,13 @@ import { ProjectDetailsModal } from "@/components/modals/ProjectDetailsModal";
 import { NotificationBell } from "@/components/notifications/NotificationCenter";
 
 const ALL_NAV_ITEMS = [
-    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Projects", url: "/projects", icon: FolderKanban },
-    { title: "Issues", url: "/issues", icon: ListTodo },
-    { title: "Board", url: "/board", icon: Trello },
-    { title: "Teams",  url: "/teams",  icon: Users      },
-    { title: "Users",  url: "/users",  icon: UserCircle, adminOnly: true },
-    { title: "Labels", url: "/labels", icon: Tag,        adminOnly: true },
+    { title: "Dashboard", url: "/dashboard", icon: IconHome },
+    { title: "Projects", url: "/projects", icon: IconFolder },
+    { title: "Issues", url: "/issues", icon: IconIssues },
+    { title: "Board", url: "/board", icon: IconBoard },
+    { title: "Teams", url: "/teams", icon: IconUsers },
+    { title: "Users", url: "/users", icon: IconUser, adminOnly: true },
+    { title: "Labels", url: "/labels", icon: IconLabel, adminOnly: true },
 ];
 
 export const TopBar = () => {
@@ -112,7 +111,7 @@ export const TopBar = () => {
 
     return (
         <>
-            <header className="sticky top-0 z-50 flex h-16 min-w-0 items-center justify-between border-b border-border bg-background/90 px-3 shadow-sm backdrop-blur-xl md:px-6">
+            <header data-slot="app-topbar" className="sticky top-0 z-50 flex h-16 min-w-0 items-center justify-between gap-3 border-b-2 border-border bg-background px-3 md:px-6">
                 <Button
                     variant="ghost"
                     size="icon"
@@ -121,7 +120,7 @@ export const TopBar = () => {
                     aria-label="Toggle menu"
                     aria-expanded={mobileMenuOpen}
                 >
-                    {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    {mobileMenuOpen ? <IconClose width={20} height={20} aria-hidden="true" /> : <IconMenu width={20} height={20} aria-hidden="true" />}
                 </Button>
 
                 {/* Search */}
@@ -134,7 +133,7 @@ export const TopBar = () => {
                             onClick={() => setSearchOpen(!isSearchOpen)}
                             aria-label="Search"
                         >
-                            <Search className="h-5 w-5" />
+                            <IconSearch width={20} height={20} aria-hidden="true" />
                         </Button>
                     </div>
 
@@ -170,12 +169,12 @@ export const TopBar = () => {
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
-                                className="relative h-10 w-10 shrink-0 rounded-full"
+                                className="relative h-10 w-10 shrink-0 p-0"
                                 disabled={loading}
                             >
-                                <Avatar className="h-10 w-10">
+                                <Avatar className="h-9 w-9 rounded-none">
                                     <AvatarImage src={user?.avatarUrl || ""} alt={getDisplayName()} />
-                                    <AvatarFallback className="bg-primary text-primary-foreground">
+                                    <AvatarFallback className="hud rounded-none bg-primary text-xs text-primary-foreground">
                                         {getInitials()}
                                     </AvatarFallback>
                                 </Avatar>
@@ -197,14 +196,14 @@ export const TopBar = () => {
                                 onClick={() => navigate("/profile")}
                                 disabled={loading}
                             >
-                                <Settings className="mr-2 h-4 w-4" />
+                                <IconSettings width={16} height={16} aria-hidden="true" className="mr-2" />
                                 <span>Settings</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={handleLogout}
                                 disabled={loading}
                             >
-                                <LogOut className="mr-2 h-4 w-4" />
+                                <IconLogout width={16} height={16} aria-hidden="true" className="mr-2" />
                                 <span>Log out</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -215,7 +214,7 @@ export const TopBar = () => {
             {/* Mobile Navigation Menu - Dropdown from top */}
             <nav
                 className={cn(
-                    "fixed left-0 right-0 top-16 z-40 max-w-full overflow-x-hidden border-b border-border bg-background/95 shadow-lg backdrop-blur-xl transition-all duration-300 ease-in-out md:hidden",
+                    "fixed left-0 right-0 top-16 z-40 max-w-full overflow-x-hidden border-b-2 border-border bg-background transition-[opacity,transform] duration-150 [transition-timing-function:steps(3,end)] md:hidden",
                     mobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full pointer-events-none"
                 )}
                 aria-hidden={!mobileMenuOpen}
@@ -228,13 +227,13 @@ export const TopBar = () => {
                             onClick={() => setMobileMenuOpen(false)}
                             className={({ isActive }) =>
                                 cn(
-                                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
-                                    "hover:bg-accent focus:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                                    isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground"
+                                    "hud px-chamfer flex items-center gap-3 border-2 px-4 py-3 text-xs",
+                                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                                    isActive ? "border-primary bg-primary text-primary-foreground" : "border-transparent text-muted-foreground hover:border-border"
                                 )
                             }
                         >
-                            <item.icon className="h-5 w-5" />
+                            <item.icon width={20} height={20} aria-hidden="true" />
                             <span>{item.title}</span>
                         </NavLink>
                     ))}
@@ -243,8 +242,8 @@ export const TopBar = () => {
 
             {/* Mobile Search Overlay */}
             {isSearchOpen && (
-                <div className="fixed inset-0 z-50 overflow-x-hidden bg-background/80 backdrop-blur-sm md:hidden">
-                    <div className="fixed left-0 right-0 top-16 border-b bg-background p-4 shadow-lg">
+                <div className="fixed inset-0 z-50 overflow-x-hidden bg-background/90 md:hidden">
+                    <div className="fixed left-0 right-0 top-16 border-b-2 bg-background p-4">
                         <div className="relative min-w-0">
                             <GooeyInput
                                 type="search"
@@ -260,7 +259,7 @@ export const TopBar = () => {
                                 className="absolute right-2 top-1/2 -translate-y-1/2"
                                 onClick={clearSearch}
                             >
-                                <X className="h-4 w-4" />
+                                <IconClose width={16} height={16} aria-hidden="true" />
                             </Button>
                         </div>
                         <div className="mt-2 relative">

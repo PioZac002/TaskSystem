@@ -1,0 +1,919 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-16T23:32:24.722Z",
+  "title": "Design System: TaskSystem",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Start Button Blue",
+        "canonical": "#1d46d1",
+        "tonalRamp": [
+          "#140066",
+          "#0a008b",
+          "#0921b0",
+          "#204ad5",
+          "#3f72ff",
+          "#619aff",
+          "#85c2ff",
+          "#cbeeff"
+        ]
+      },
+      "primary-foreground": {
+        "role": "primary",
+        "displayName": "Key White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a4a4a4",
+          "#cacaca",
+          "#eeeeee"
+        ]
+      },
+      "card-ink": {
+        "role": "neutral",
+        "displayName": "Instruction Card Ink",
+        "canonical": "#0f1020",
+        "tonalRamp": [
+          "#090919",
+          "#212234",
+          "#3c3e51",
+          "#5a5c70",
+          "#7c7e94",
+          "#a0a3b9",
+          "#c6c9e0",
+          "#eceefa"
+        ]
+      },
+      "card-paper": {
+        "role": "neutral",
+        "displayName": "Card Stock",
+        "canonical": "#fcfcfd",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242425",
+          "#404040",
+          "#5d5d5e",
+          "#808081",
+          "#a4a4a5",
+          "#cacacb",
+          "#eeeeef"
+        ]
+      },
+      "card-white": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a4a4a4",
+          "#cacaca",
+          "#eeeeee"
+        ]
+      },
+      "card-muted": {
+        "role": "neutral",
+        "displayName": "Card Tint",
+        "canonical": "#eff0f4",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232427",
+          "#3f4043",
+          "#5d5d61",
+          "#7f8083",
+          "#a3a4a8",
+          "#c9cace",
+          "#eeeef0"
+        ]
+      },
+      "card-muted-ink": {
+        "role": "neutral",
+        "displayName": "Card Grey Ink",
+        "canonical": "#4b5063",
+        "tonalRamp": [
+          "#070a19",
+          "#1f2334",
+          "#3a3f51",
+          "#575d70",
+          "#7a7f94",
+          "#9ea4b9",
+          "#c3cae0",
+          "#ebeefa"
+        ]
+      },
+      "card-accent": {
+        "role": "neutral",
+        "displayName": "Card Blue Wash",
+        "canonical": "#e4ebff",
+        "tonalRamp": [
+          "#070a17",
+          "#1f2332",
+          "#3a3f4f",
+          "#575d6e",
+          "#7a8092",
+          "#9ea4b7",
+          "#c3cade",
+          "#ebeef8"
+        ]
+      },
+      "card-accent-ink": {
+        "role": "neutral",
+        "displayName": "Card Deep Blue Ink",
+        "canonical": "#0d2d8f",
+        "tonalRamp": [
+          "#07004f",
+          "#010a72",
+          "#113395",
+          "#2d55b9",
+          "#4e7ae2",
+          "#70a0ff",
+          "#95c7ff",
+          "#d3efff"
+        ]
+      },
+      "card-border": {
+        "role": "neutral",
+        "displayName": "Card Rule",
+        "canonical": "#cdd0da",
+        "tonalRamp": [
+          "#090b11",
+          "#22242b",
+          "#3d3f47",
+          "#5b5d66",
+          "#7d8089",
+          "#a1a4ae",
+          "#c7cad4",
+          "#edeef3"
+        ]
+      },
+      "card-input": {
+        "role": "neutral",
+        "displayName": "Input Rule",
+        "canonical": "#9da2b3",
+        "tonalRamp": [
+          "#080a16",
+          "#202330",
+          "#3b3f4d",
+          "#595d6c",
+          "#7b8090",
+          "#9fa4b5",
+          "#c5cadc",
+          "#ebeef7"
+        ]
+      },
+      "card-destructive": {
+        "role": "semantic",
+        "displayName": "Card Alarm Red",
+        "canonical": "#c81e3a",
+        "tonalRamp": [
+          "#3f0000",
+          "#650000",
+          "#8c0008",
+          "#b3002a",
+          "#de394c",
+          "#ff646f",
+          "#ff8c93",
+          "#ffd4d3"
+        ]
+      },
+      "card-success": {
+        "role": "semantic",
+        "displayName": "Card 1UP Green",
+        "canonical": "#15803d",
+        "tonalRamp": [
+          "#001600",
+          "#003300",
+          "#00520e",
+          "#00722f",
+          "#349652",
+          "#5dbc75",
+          "#84e49a",
+          "#cffcd7"
+        ]
+      },
+      "card-warning": {
+        "role": "semantic",
+        "displayName": "Card Amber",
+        "canonical": "#b45309",
+        "tonalRamp": [
+          "#310000",
+          "#540000",
+          "#771800",
+          "#9b3c00",
+          "#c36120",
+          "#ec864a",
+          "#ffac71",
+          "#ffe1c4"
+        ]
+      },
+      "screen-primary": {
+        "role": "primary",
+        "displayName": "Screen Start Blue",
+        "canonical": "#2456e8",
+        "tonalRamp": [
+          "#16006a",
+          "#0b008f",
+          "#041db4",
+          "#1a49da",
+          "#3a71ff",
+          "#5c99ff",
+          "#80c1ff",
+          "#c9eeff"
+        ]
+      },
+      "screen-primary-text": {
+        "role": "primary",
+        "displayName": "Phosphor Periwinkle",
+        "canonical": "#7da2ff",
+        "tonalRamp": [
+          "#050046",
+          "#071467",
+          "#1d3689",
+          "#3857ad",
+          "#597bd4",
+          "#7ca0fd",
+          "#a0c7ff",
+          "#d9eeff"
+        ]
+      },
+      "screen-ink": {
+        "role": "neutral",
+        "displayName": "Phosphor White",
+        "canonical": "#f2f1fa",
+        "tonalRamp": [
+          "#0b0a10",
+          "#24232a",
+          "#403f46",
+          "#5d5c64",
+          "#807f87",
+          "#a4a3ac",
+          "#cac9d2",
+          "#eeeef2"
+        ]
+      },
+      "screen-black": {
+        "role": "neutral",
+        "displayName": "Screen Black",
+        "canonical": "#07060d",
+        "tonalRamp": [
+          "#0b0a12",
+          "#24232c",
+          "#403e48",
+          "#5d5c67",
+          "#807f8a",
+          "#a4a3af",
+          "#cac9d5",
+          "#eeeef4"
+        ]
+      },
+      "screen-panel": {
+        "role": "neutral",
+        "displayName": "Screen Panel",
+        "canonical": "#0e0c1f",
+        "tonalRamp": [
+          "#0a081b",
+          "#222136",
+          "#3e3d54",
+          "#5b5b73",
+          "#7e7d97",
+          "#a2a2bc",
+          "#c8c7e3",
+          "#ededfb"
+        ]
+      },
+      "screen-muted": {
+        "role": "neutral",
+        "displayName": "Screen Well",
+        "canonical": "#17153a",
+        "tonalRamp": [
+          "#090427",
+          "#1f1e44",
+          "#3a3b63",
+          "#575984",
+          "#797ba9",
+          "#9da0d0",
+          "#c2c6f7",
+          "#eaecff"
+        ]
+      },
+      "screen-muted-ink": {
+        "role": "neutral",
+        "displayName": "Faded Phosphor",
+        "canonical": "#a6a3c9",
+        "tonalRamp": [
+          "#0b0620",
+          "#231f3d",
+          "#3e3b5b",
+          "#5c597b",
+          "#7e7b9f",
+          "#a3a0c5",
+          "#c8c5ed",
+          "#edecff"
+        ]
+      },
+      "screen-accent": {
+        "role": "neutral",
+        "displayName": "Screen Indigo Wash",
+        "canonical": "#1a1745",
+        "tonalRamp": [
+          "#09012c",
+          "#1e1c4b",
+          "#39396b",
+          "#55578c",
+          "#777ab1",
+          "#9b9fd8",
+          "#c0c5ff",
+          "#e9ecff"
+        ]
+      },
+      "screen-accent-ink": {
+        "role": "neutral",
+        "displayName": "Phosphor Aqua",
+        "canonical": "#7fe7f2",
+        "tonalRamp": [
+          "#00131e",
+          "#002f3a",
+          "#004d58",
+          "#006d77",
+          "#17919b",
+          "#4bb6c1",
+          "#75dde8",
+          "#c9f9fe"
+        ]
+      },
+      "screen-border": {
+        "role": "neutral",
+        "displayName": "Scanline Indigo",
+        "canonical": "#2b2a63",
+        "tonalRamp": [
+          "#090032",
+          "#1d1a51",
+          "#373772",
+          "#535694",
+          "#7579ba",
+          "#989ee1",
+          "#bec4ff",
+          "#e7ecff"
+        ]
+      },
+      "screen-input": {
+        "role": "neutral",
+        "displayName": "Bezel Indigo",
+        "canonical": "#403e86",
+        "tonalRamp": [
+          "#0c003a",
+          "#1e145a",
+          "#37347b",
+          "#53539d",
+          "#7477c4",
+          "#989bec",
+          "#bdc2ff",
+          "#e7ebff"
+        ]
+      },
+      "screen-ring": {
+        "role": "secondary",
+        "displayName": "Phosphor Cyan",
+        "canonical": "#33d6e8",
+        "tonalRamp": [
+          "#001325",
+          "#003142",
+          "#005061",
+          "#007081",
+          "#0094a6",
+          "#00bacc",
+          "#45e2f4",
+          "#bcfcff"
+        ]
+      },
+      "screen-destructive": {
+        "role": "semantic",
+        "displayName": "Screen Alarm Red",
+        "canonical": "#e0283a",
+        "tonalRamp": [
+          "#420000",
+          "#6a0000",
+          "#910000",
+          "#b90018",
+          "#e42e3e",
+          "#ff5c62",
+          "#ff8686",
+          "#ffd2cd"
+        ]
+      },
+      "screen-success": {
+        "role": "semantic",
+        "displayName": "Screen 1UP Green",
+        "canonical": "#36d15a",
+        "tonalRamp": [
+          "#001800",
+          "#003700",
+          "#005700",
+          "#007800",
+          "#009e23",
+          "#21c54e",
+          "#5aed75",
+          "#c1ffc7"
+        ]
+      },
+      "screen-warning": {
+        "role": "semantic",
+        "displayName": "Screen Amber",
+        "canonical": "#ffb020",
+        "tonalRamp": [
+          "#2c0000",
+          "#4d0100",
+          "#6e2800",
+          "#914900",
+          "#b86d00",
+          "#df9200",
+          "#ffb930",
+          "#ffe7b1"
+        ]
+      },
+      "status-new": {
+        "role": "status",
+        "displayName": "Status New (card)",
+        "canonical": "#6d4ed8",
+        "tonalRamp": [
+          "#1b0059",
+          "#2d007c",
+          "#440ea0",
+          "#5f3cc5",
+          "#7f63ef",
+          "#a28aff",
+          "#c6b1ff",
+          "#eae4ff"
+        ]
+      },
+      "status-triage": {
+        "role": "status",
+        "displayName": "Status Triage (card)",
+        "canonical": "#4d7c0f",
+        "tonalRamp": [
+          "#001200",
+          "#022f00",
+          "#214d00",
+          "#3e6c00",
+          "#60912c",
+          "#84b654",
+          "#a9dd7a",
+          "#def9c8"
+        ]
+      },
+      "status-todo": {
+        "role": "status",
+        "displayName": "Status Todo (card)",
+        "canonical": "#0e7490",
+        "tonalRamp": [
+          "#000f27",
+          "#002b44",
+          "#004963",
+          "#006884",
+          "#338ca9",
+          "#5bb2cf",
+          "#82d8f7",
+          "#cef6ff"
+        ]
+      },
+      "status-progress": {
+        "role": "status",
+        "displayName": "Status Progress (card)",
+        "canonical": "#1d46d1",
+        "tonalRamp": [
+          "#140066",
+          "#0a008b",
+          "#0921b0",
+          "#204ad5",
+          "#3f72ff",
+          "#619aff",
+          "#85c2ff",
+          "#cbeeff"
+        ]
+      },
+      "status-waiting": {
+        "role": "status",
+        "displayName": "Status Waiting (card)",
+        "canonical": "#c2410c",
+        "tonalRamp": [
+          "#390000",
+          "#5e0000",
+          "#830000",
+          "#a92700",
+          "#d25022",
+          "#fd774c",
+          "#ff9e72",
+          "#ffdbc4"
+        ]
+      },
+      "status-review": {
+        "role": "status",
+        "displayName": "Status Review (card)",
+        "canonical": "#b3146f",
+        "tonalRamp": [
+          "#380011",
+          "#5d002b",
+          "#830048",
+          "#a90067",
+          "#d33c8a",
+          "#fe65af",
+          "#ff8cd5",
+          "#ffd3f4"
+        ]
+      },
+      "status-done": {
+        "role": "status",
+        "displayName": "Status Done (card)",
+        "canonical": "#a16207",
+        "tonalRamp": [
+          "#270000",
+          "#470d00",
+          "#682d00",
+          "#8a4c00",
+          "#b07020",
+          "#d7944b",
+          "#ffba71",
+          "#ffe7c4"
+        ]
+      },
+      "status-canceled": {
+        "role": "status",
+        "displayName": "Status Canceled (card)",
+        "canonical": "#be123c",
+        "tonalRamp": [
+          "#3e0000",
+          "#640000",
+          "#8b0015",
+          "#b20033",
+          "#dd3a54",
+          "#ff6477",
+          "#ff8d9c",
+          "#ffd4d7"
+        ]
+      },
+      "screen-status-new": {
+        "role": "status",
+        "displayName": "Status New (screen)",
+        "canonical": "#b39dff",
+        "tonalRamp": [
+          "#15003e",
+          "#2b035f",
+          "#452981",
+          "#634aa4",
+          "#856ecb",
+          "#a992f3",
+          "#ceb9ff",
+          "#f0e7ff"
+        ]
+      },
+      "screen-status-triage": {
+        "role": "status",
+        "displayName": "Status Triage (screen)",
+        "canonical": "#b8f03a",
+        "tonalRamp": [
+          "#001200",
+          "#092e00",
+          "#254d00",
+          "#416e00",
+          "#629300",
+          "#85b900",
+          "#aae11f",
+          "#ddfcaf"
+        ]
+      },
+      "screen-status-todo": {
+        "role": "status",
+        "displayName": "Status Todo (screen)",
+        "canonical": "#33d6e8",
+        "tonalRamp": [
+          "#001325",
+          "#003142",
+          "#005061",
+          "#007081",
+          "#0094a6",
+          "#00bacc",
+          "#45e2f4",
+          "#bcfcff"
+        ]
+      },
+      "screen-status-progress": {
+        "role": "status",
+        "displayName": "Status Progress (screen)",
+        "canonical": "#7da2ff",
+        "tonalRamp": [
+          "#050046",
+          "#071467",
+          "#1d3689",
+          "#3857ad",
+          "#597bd4",
+          "#7ca0fd",
+          "#a0c7ff",
+          "#d9eeff"
+        ]
+      },
+      "screen-status-waiting": {
+        "role": "status",
+        "displayName": "Status Waiting (screen)",
+        "canonical": "#ff8a1f",
+        "tonalRamp": [
+          "#360000",
+          "#5a0000",
+          "#7e0500",
+          "#a33400",
+          "#cb5b00",
+          "#f58108",
+          "#ffa848",
+          "#ffe0b6"
+        ]
+      },
+      "screen-status-review": {
+        "role": "status",
+        "displayName": "Status Review (screen)",
+        "canonical": "#ff5ad2",
+        "tonalRamp": [
+          "#380026",
+          "#5d0044",
+          "#830064",
+          "#a90085",
+          "#d32aaa",
+          "#fe59d1",
+          "#ff82f9",
+          "#ffd0ff"
+        ]
+      },
+      "screen-status-done": {
+        "role": "status",
+        "displayName": "Status Done (screen)",
+        "canonical": "#ffd23f",
+        "tonalRamp": [
+          "#220000",
+          "#401700",
+          "#5f3600",
+          "#805600",
+          "#a47900",
+          "#ca9f00",
+          "#f2c52c",
+          "#ffedb0"
+        ]
+      },
+      "screen-status-canceled": {
+        "role": "status",
+        "displayName": "Status Canceled (screen)",
+        "canonical": "#ff4d5e",
+        "tonalRamp": [
+          "#420000",
+          "#690000",
+          "#900001",
+          "#b80025",
+          "#e32f48",
+          "#ff5d6b",
+          "#ff8690",
+          "#ffd2d1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing hero and closing call; Silkscreen caps, phosphor bloom allowed in dark theme."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings inside the landing and dashboard scopes."
+      },
+      "title": {
+        "displayName": "Sprite Title",
+        "purpose": "Wordmark, move names, mode titles, project level cards (Pixelify Sans)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Explanatory sentences in system sans, muted ink, about 34rem max."
+      },
+      "body-row": {
+        "displayName": "Row Text",
+        "purpose": "User-entered issue titles in lists, own case."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, nav, HUD links; uppercase Silkscreen with tabular numerals."
+      },
+      "label-sm": {
+        "displayName": "Small Label",
+        "purpose": "Status chips, badges, HUD readout labels and metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "phosphor-bloom",
+        "value": "text-shadow: 0 0 1px currentColor, 0 0 12px color-mix(in srgb, currentColor 45%, transparent)",
+        "purpose": "Dark theme only, on display text. Never on the printed card."
+      },
+      {
+        "name": "focus-inset",
+        "value": "inset 0 0 0 2px var(--color-ring)",
+        "purpose": "Focus ring on chamfered (clipped) controls."
+      },
+      {
+        "name": "scanlines",
+        "value": "repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px); light: rgb(12 11 36 / 0.05)",
+        "purpose": "Optional CRT overlay layer, multiply blend, off by default on the dashboard."
+      }
+    ],
+    "motion": [
+      {
+        "name": "step-control",
+        "value": "100ms steps(2, end)",
+        "purpose": "Color and border changes on buttons, nav tiles, mode select."
+      },
+      {
+        "name": "step-meter",
+        "value": "320ms steps(4, end)",
+        "purpose": "Segmented meter fill (scaleX)."
+      },
+      {
+        "name": "step-swap",
+        "value": "180ms steps(3, end)",
+        "purpose": "Layout swap and panel entry: opacity plus 8px rise."
+      },
+      {
+        "name": "flash-once",
+        "value": "480ms steps(6, end)",
+        "purpose": "Single gold completion flash or red overdue flash; never loops."
+      },
+      {
+        "name": "caret-blink",
+        "value": "1.1s steps(1, end) infinite",
+        "purpose": "Insert-coin caret on the landing close."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Token kept for non-sprite UI (drawers, popovers)."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Token kept for non-sprite UI."
+      },
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Drawer slide."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animations none or 1ms; meter transition none; pressed 1px drop disabled",
+        "purpose": "prefers-reduced-motion handling."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "container",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Chamfered cabinet key for the main action; steps its border on hover and drops 1px when pressed.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Press start</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 2px solid transparent; font-size: 0.75rem; font-family: var(--font-hud, 'Silkscreen', ui-monospace, monospace); text-transform: uppercase; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px); cursor: pointer; transition: background-color 100ms steps(2, end), border-color 100ms steps(2, end), color 100ms steps(2, end); } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--color-ring, #1d46d1); } .ds-btn-primary { background: var(--color-primary, #1d46d1); border-color: var(--color-primary, #1d46d1); color: var(--color-primary-foreground, #ffffff); } .ds-btn-primary:hover { border-color: var(--color-foreground, #0f1020); } @media (prefers-reduced-motion: reduce) { .ds-btn:active { transform: none; } }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary cabinet key on the card ground with an input-rule border that steps to primary on hover.",
+      "html": "<button class=\"ds-btn-outline\">Sign in</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 16px; background: var(--color-card, #ffffff); color: var(--color-foreground, #0f1020); border: 2px solid var(--color-input, #9da2b3); font-size: 0.75rem; font-family: var(--font-hud, 'Silkscreen', ui-monospace, monospace); text-transform: uppercase; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px); cursor: pointer; transition: border-color 100ms steps(2, end); } .ds-btn-outline:hover { border-color: var(--color-primary, #1d46d1); } .ds-btn-outline:active { transform: translateY(1px); } .ds-btn-outline:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--color-ring, #1d46d1); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Borderless key for low-emphasis actions; gains an input-rule border and muted fill on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; background: transparent; color: var(--color-foreground, #0f1020); border: 2px solid transparent; font-size: 0.75rem; font-family: var(--font-hud, 'Silkscreen', ui-monospace, monospace); text-transform: uppercase; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px); cursor: pointer; transition: background-color 100ms steps(2, end), border-color 100ms steps(2, end); } .ds-btn-ghost:hover { border-color: var(--color-input, #9da2b3); background: var(--color-muted, #eff0f4); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--color-ring, #1d46d1); }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "One sprite color plus one pixel glyph per status, as a 12% tint with a 55% border.",
+      "html": "<span class=\"ds-chip\" style=\"--st: var(--st-done, #a16207)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"currentColor\" shape-rendering=\"crispEdges\" aria-hidden=\"true\"><path d=\"M5 20H8V22H3V16H5V20ZM21 22H16V20H19V16H21V22ZM10 20H8V18H10V20ZM16 20H14V18H16V20ZM14 18H10V16H14V18ZM7 16H5V13H7V16ZM19 16H17V13H19V16ZM5 13H3V11H5V13ZM21 13H19V11H21V13ZM9 9H3V11H1V7H9V9ZM23 11H21V9H15V7H23V11ZM11 7H9V3H11V7ZM15 7H13V3H15V7ZM13 3H11V1H13V3Z\"/></svg>Done</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px 1px 4px; border: 1px solid color-mix(in srgb, var(--st) 55%, transparent); background: color-mix(in srgb, var(--st) 12%, transparent); color: var(--st); font-family: var(--font-hud, 'Silkscreen', ui-monospace, monospace); font-size: 0.6875rem; line-height: 1.25rem; text-transform: uppercase; white-space: nowrap; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Chamfered field with a pixel search glyph; border switches to the ring color on focus.",
+      "html": "<label class=\"ds-input\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" shape-rendering=\"crispEdges\" aria-hidden=\"true\"><path d=\"M22 22h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-6-2H6v-2h8v2Zm4 0h-2v-2h2v2ZM6 16H4v-2h2v2Zm10 0h-2v-2h2v2ZM4 14H2V6h2v8Zm14 0h-2V6h2v8ZM6 6H4V4h2v2Zm10 0h-2V4h2v2Zm-2-2H6V2h8v2Z\"/></svg><input type=\"search\" placeholder=\"Search issues\"></label>",
+      "css": ".ds-input { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; background: var(--color-card, #ffffff); border: 2px solid var(--color-input, #9da2b3); color: var(--color-muted-foreground, #4b5063); clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px); } .ds-input:focus-within { border-color: var(--color-ring, #1d46d1); } .ds-input input { flex: 1; border: 0; outline: none; background: transparent; font: 400 0.875rem/1.4 ui-sans-serif, system-ui, sans-serif; color: var(--color-foreground, #0f1020); }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "44px chamfered nav tiles; the active route is a solid primary fill.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item is-active\" href=\"#\">Dashboard</a><a class=\"ds-nav-item\" href=\"#\">Projects</a><a class=\"ds-nav-item\" href=\"#\">Issues</a></nav>",
+      "css": ".ds-nav { display: grid; gap: 4px; width: 220px; } .ds-nav-item { display: flex; align-items: center; height: 44px; padding: 0 12px; border: 2px solid transparent; color: var(--color-muted-foreground, #4b5063); text-decoration: none; font-size: 0.75rem; font-family: var(--font-hud, 'Silkscreen', ui-monospace, monospace); text-transform: uppercase; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px); transition: background-color 100ms steps(2, end), border-color 100ms steps(2, end), color 100ms steps(2, end); } .ds-nav-item:hover { border-color: var(--color-border, #cdd0da); color: var(--color-foreground, #0f1020); } .ds-nav-item.is-active { background: var(--color-primary, #1d46d1); border-color: var(--color-primary, #1d46d1); color: var(--color-primary-foreground, #ffffff); } .ds-nav-item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--color-ring, #1d46d1); }"
+    },
+    {
+      "name": "HUD Readout Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Square 2px-ruled panel of HUD cells separated by 2px border-colored gaps, with a segmented meter.",
+      "html": "<dl class=\"ds-hud\"><div><dt>Open</dt><dd>14</dd></div><div><dt>Overdue</dt><dd class=\"ds-red\">02</dd></div><div><dt>Clear %</dt><dd><span class=\"ds-meter\" style=\"--fill: 0.62\"></span></dd></div></dl>",
+      "css": ".ds-hud { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; margin: 0; border: 2px solid var(--color-border, #cdd0da); background: var(--color-border, #cdd0da); } .ds-hud > div { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; background: var(--color-card, #ffffff); } .ds-hud dt { font-family: var(--font-hud, 'Silkscreen', ui-monospace, monospace); text-transform: uppercase; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; font-size: 0.625rem; color: var(--color-muted-foreground, #4b5063); } .ds-hud dd { margin: 0; flex: 1; font-family: var(--font-hud, 'Silkscreen', monospace); font-size: 1.25rem; color: var(--color-foreground, #0f1020); } .ds-hud .ds-red { color: var(--px-red, #be123c); } .ds-meter { position: relative; display: block; height: 10px; background: var(--color-muted, #eff0f4); -webkit-mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px); } .ds-meter::after { content: \"\"; position: absolute; inset: 0; background: var(--px-gold, #a16207); transform: scaleX(var(--fill, 0)); transform-origin: left; transition: transform 320ms steps(4, end); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Arcade Cabinet",
+    "overview": "**Creative North Star: \"The Arcade Cabinet\"**\n\nTaskSystem is a CRT pixel-art arcade cabinet. The light theme is the printed instruction card bolted to the cabinet: near-white stock, dark ink, crisp 2px rules. The dark theme is the phosphor screen: violet-black glass, luminous sprite colors, optional bloom and scanlines. Both themes share one geometry: square tiles on an 8px grid, chamfered corners cut on whole pixels, blocky pixel caps for everything the machine says, and plain system text for everything the user wrote.\n\nThe cabinet is a HUD, never a game that hides the work. Counts are readouts, progress is a segmented energy bar, statuses are sprites with their own color and glyph, and completion is the only thing that earns gold. Motion moves the way a sprite does: in discrete steps, never in smooth tweens.\n\nThe system is fully realized on the landing page and the dashboard. Other application pages (Projects, Issues, Board, Teams, auth, modals) inherit the tokens, Button, Badge, status chips and icons but have not been recomposed in the world.",
+    "keyCharacteristics": [
+      "Two themes as two materials of one machine: printed card (light) and phosphor screen (dark).",
+      "Zero radius everywhere; corners are chamfered 4px or 8px via clip-path.",
+      "Three type voices: Silkscreen caps for machine speech, Pixelify Sans for sprite names, system sans for user content.",
+      "Eight statuses, each with exactly one sprite color and one pixelarticons glyph.",
+      "Flat depth: 2px borders and tonal tiles, no ambient shadows.",
+      "Whole-pixel stepped motion on transform and opacity only."
+    ],
+    "rules": [
+      {
+        "name": "The One Sprite Rule",
+        "body": "Each status owns exactly one color and one pixelarticons glyph (New sparkle, Triage question circle, To Do list box, In Progress play, Waiting hourglass, Code Review eye, Done star, Canceled skull). The glyph always accompanies the color so state reads without color. Never reuse a status color for decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Power Gold Rule",
+        "body": "Gold means completed. It appears only on Done, completion flashes, cleared sprites and the checkmark in the mark. Warnings use the warning token, not gold.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tint-Not-Fill Rule",
+        "body": "Status and semantic chips sit at 12% color over the ground with a 55% color border and full-color text; solid status fills are not used.",
+        "section": "colors"
+      },
+      {
+        "name": "The Machine Speaks In Caps Rule",
+        "body": "Silkscreen uppercase is for what the cabinet says (labels, counts, controls, headings on redesigned surfaces). Anything the user typed stays in system sans, in its own case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scoped Heading Rule",
+        "body": "h1 to h3 become Silkscreen caps only inside the landing and dashboard scopes; other pages keep their headings in their original face until they are recomposed.",
+        "section": "typography"
+      },
+      {
+        "name": "The Printed Card Rule",
+        "body": "Light theme has no glow and no bloom; it is ink on stock.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Inset Focus Rule",
+        "body": "Focus on clipped tiles is an inset 2px ring in the ring color, because clip-path would cut an outside outline; unclipped links use a 2px outline offset 2px.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do pair every status color with its pixelarticons glyph at crisp edges.",
+      "Do keep radius at 0px and cut corners with the 4px or 8px chamfer.",
+      "Do animate only transform and opacity (and stepped color on controls) using steps() timing, and neutralize animation under prefers-reduced-motion.",
+      "Do set counts, labels and controls in Silkscreen caps with tabular numerals, and user content in system sans.",
+      "Do use inset 2px ring focus on clipped elements.",
+      "Do keep bloom and scanlines as dark-screen capabilities; scanlines stay optional."
+    ],
+    "donts": [
+      "Don't use gold for anything other than completion.",
+      "Don't give a status a second color or a second glyph, or use a status color as decoration.",
+      "Don't add soft ambient drop shadows, gradients or glassy blur; depth is 2px rules and tonal tiles.",
+      "Don't use smooth eased tweens for sprite, tile or meter motion, or animate width and layout properties.",
+      "Don't set user-entered titles or sentences in the pixel faces.",
+      "Don't loop alert flashes; each flash plays once."
+    ]
+  }
+}

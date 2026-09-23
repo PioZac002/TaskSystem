@@ -1,78 +1,58 @@
 import { useEffect, useState } from "react";
+import { IconMoon, IconSun } from "@/components/arcade/icons";
+import { cn } from "@/lib/utils";
 
-export const ThemeToggle = () => {
-    const [theme, setTheme] = useState("light");
-    const [mounted, setMounted] = useState(false);
+// Cabinet power switch: the printed card (light) or the phosphor screen (dark)
+export const ThemeToggle = ({ className }) => {
+    const [theme, setTheme] = useState(() => {
+        if (typeof window === "undefined") return "dark";
+        try {
+            return localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        } catch {
+            return "dark";
+        }
+    });
 
     useEffect(() => {
-        setMounted(true);
-        const savedTheme = localStorage.getItem("theme") ||
-            (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-        setTheme(savedTheme);
-        document.documentElement.classList.toggle("dark", savedTheme === "dark");
-    }, []);
+        document.documentElement.classList.toggle("dark", theme === "dark");
+    }, [theme]);
 
     const toggleTheme = () => {
-        const newTheme = theme === "dark" ? "light" : "dark";
-        setTheme(newTheme);
-        document.documentElement.classList.toggle("dark", newTheme === "dark");
-        localStorage.setItem("theme", newTheme);
+        const next = theme === "dark" ? "light" : "dark";
+        setTheme(next);
+        try {
+            localStorage.setItem("theme", next);
+        } catch {
+            // Storage unavailable: the choice still applies for this session
+        }
     };
 
-    const isDark = mounted ? theme === "dark" : false;
+    const isDark = theme === "dark";
 
     return (
-        <label
-            className="theme-switch-label"
-            aria-label="Toggle theme"
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        <button
+            type="button"
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Dark screen"
+            title={isDark ? "Switch to the printed card (light)" : "Switch to the screen (dark)"}
+            onClick={toggleTheme}
+            className={cn(
+                "hud px-chamfer relative grid h-9 w-[4.5rem] shrink-0 grid-cols-2 border-2 border-border bg-muted p-0.5 text-muted-foreground",
+                className
+            )}
         >
-            <input
-                type="checkbox"
-                checked={isDark}
-                onChange={toggleTheme}
-                disabled={!mounted}
+            <span
+                aria-hidden="true"
+                className="px-chamfer absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] bg-primary transition-transform duration-150 [transition-timing-function:steps(3,end)]"
+                style={{ transform: isDark ? "translateX(100%)" : "translateX(0)" }}
             />
-            <span className="theme-slider">
-                <span className="theme-sun-moon" aria-hidden="true">
-                    <svg className="theme-moon-dot theme-moon-dot-one" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                    <svg className="theme-moon-dot theme-moon-dot-two" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                    <svg className="theme-moon-dot theme-moon-dot-three" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                    <svg className="theme-light-ray theme-light-ray-one" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                    <svg className="theme-light-ray theme-light-ray-two" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                    <svg className="theme-light-ray theme-light-ray-three" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                </span>
-                <span className="theme-clouds" aria-hidden="true">
-                    <svg className="theme-cloud theme-cloud-one" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                    <svg className="theme-cloud theme-cloud-two" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                    <svg className="theme-cloud theme-cloud-three" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="50" />
-                    </svg>
-                </span>
-                <span className="theme-stars" aria-hidden="true">
-                    {[0, 1, 2, 3].map((star) => (
-                        <svg key={star} className={`theme-star theme-star-${star + 1}`} viewBox="0 0 20 20">
-                            <path d="M 0 10 C 10 10,10 10,0 10 C 10 10,10 10,10 20 C 10 10,10 10,20 10 C 10 10,10 10,10 0 C 10 10,10 10,0 10 Z" />
-                        </svg>
-                    ))}
-                </span>
+            <span className={cn("relative z-10 grid place-items-center", !isDark && "text-primary-foreground")}>
+                <IconSun width={16} height={16} aria-hidden="true" />
             </span>
-        </label>
+            <span className={cn("relative z-10 grid place-items-center", isDark && "text-primary-foreground")}>
+                <IconMoon width={16} height={16} aria-hidden="true" />
+            </span>
+        </button>
     );
 };

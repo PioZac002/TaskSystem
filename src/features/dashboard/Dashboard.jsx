@@ -1,10 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Progress } from "@/components/ui/Progress";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ProjectFlipCard } from "@/components/ui/ProjectFlipCard";
 import { IssueLabelChips } from "@/components/ui/IssueLabelChips";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
@@ -21,27 +18,29 @@ import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
 import { CreateIssueModal } from "@/components/modals/CreateIssueModal";
 import { AddButton } from "@/components/ui/AddButton";
 import { useResponsiveNavigation } from "@/hooks/useResponsiveNavigation";
+import { PriorityMark, PxMeter, StatusGlyph } from "@/components/arcade/StatusGlyph";
 import {
-    ArrowDown,
-    ArrowUp,
-    Calendar,
-    FolderKanban,
-    LayoutDashboard,
-    PanelRightOpen,
-    Settings2,
-    SlidersHorizontal,
-    User,
-    Eye,
-} from "lucide-react";
+    IconArrowDown,
+    IconArrowRight,
+    IconArrowUp,
+    IconBoard,
+    IconCalendar,
+    IconCog,
+    IconEye,
+    IconFolder,
+    IconGrid,
+    IconHome,
+    IconProgress,
+    IconStar,
+} from "@/components/arcade/icons";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { gsap } from "gsap";
+import { Flip } from "gsap/Flip";
 import { cn } from "@/lib/utils";
-import {
-    STATUS_LABELS,
-    PRIORITY_LABELS,
-    getPriorityBadgeVariant,
-    getStatusBadgeClass,
-} from "@/utils/issueConstants";
+import { ALL_STATUSES, STATUS_COLORS, STATUS_LABELS, PRIORITY_LABELS } from "@/utils/issueConstants";
+import "./dashboard.css";
+
+gsap.registerPlugin(Flip);
 
 const DASHBOARD_MODE_KEY = "dashboard_mode";
 const DASHBOARD_WIDGETS_KEY = "dashboard_custom_widgets";
@@ -85,8 +84,15 @@ const DEFAULT_WIDGET_LAYOUT = {
     "project-progress-chart": "full",
 };
 
-const DEFAULT_MODE_LAYOUT = ["your-issues", "recent-projects", "your-projects"];
-const PROJECT_ACCENTS = ["#7c3aed", "#3b82f6", "#10b981", "#f97316", "#a855f7", "#06b6d4"];
+const MODE_OPTIONS = [
+    { value: "default", label: "Default", icon: IconHome },
+    { value: "custom", label: "Custom", icon: IconGrid },
+    { value: "jira", label: "Jira-like", icon: IconBoard },
+];
+
+const PRIORITY_COLORS = { LOW: "var(--st-new)", NORMAL: "var(--st-progress)", HIGH: "var(--st-waiting)", CRITICAL: "var(--st-canceled)" };
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HUD_TICK = { fontFamily: "Silkscreen, monospace", fontSize: 10, fill: "var(--color-muted-foreground)" };
 
 const getUserScopedStorageKey = (prefix, userId) => `${prefix}:${userId || "anonymous"}`;
 
@@ -99,142 +105,298 @@ function safeReadJson(key, fallback) {
     }
 }
 
+function prefersReducedMotion() {
+    return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+const shortDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+
 function formatDate(dateString) {
     if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return shortDate.format(new Date(dateString));
 }
 
-function WidgetShell({ title, subtitle, action, children }) {
+function startOfToday() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+}
+
+function greetingFor(date) {
+    const hour = date.getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+}
+
+// ─── Building blocks ───────────────────────────────────────────────────────────
+
+function WidgetShell({ title, count, action, children, plain = false, className }) {
     return (
-        <Card className="h-full border-border/70 shadow-sm">
-            <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <CardTitle className="text-base">{title}</CardTitle>
-                        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-                    </div>
-                    {action}
+        <section className={cn("flex h-full min-w-0 flex-col", className)}>
+            <header className="mb-3 flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <div className="flex min-w-0 items-baseline gap-2.5">
+                    <h2 className="truncate text-xl leading-none">{title}</h2>
+                    {count != null && <span className="px-num text-xs text-muted-foreground">{count}</span>}
                 </div>
-            </CardHeader>
-            <CardContent className="pt-0">{children}</CardContent>
-        </Card>
+                {action}
+            </header>
+            <div className={cn("min-w-0 flex-1", !plain && "border-2 border-border bg-card")}>{children}</div>
+        </section>
     );
 }
 
-function MetricTile({ label, value, tone = "default" }) {
+function HeaderLink({ to, children }) {
     return (
-        <Card className={cn(
-            "border-border/70 shadow-sm",
-            tone === "violet" && "bg-violet-500/5",
-            tone === "blue" && "bg-blue-500/5",
-            tone === "green" && "bg-emerald-500/5",
-            tone === "orange" && "bg-orange-500/5",
-            tone === "cyan" && "bg-cyan-500/5"
-        )}>
-            <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-                </div>
-                <p className="mt-2 text-2xl font-bold tabular-nums">{value}</p>
-            </CardContent>
-        </Card>
+        <Link to={to} className="dash-link hud inline-flex min-h-9 items-center gap-1.5 px-1 text-[0.6875rem] text-muted-foreground">
+            {children}
+            <IconArrowRight width={14} height={14} aria-hidden="true" />
+        </Link>
     );
 }
 
-function IssueItem({ issue, getUserName, jiraLike, onOpenPanel }) {
+function EmptyState({ icon, title, hint }) {
+    const EmptyIcon = icon || IconStar;
     return (
-        <div className="rounded-lg border border-border/70 bg-background p-3 hover:border-border transition-colors">
-            <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-[10px] text-muted-foreground">{issue.key}</span>
-                        {jiraLike ? (
-                            <button
-                                title="Open details panel"
-                                className="truncate text-sm font-semibold hover:underline text-left"
-                                onClick={() => onOpenPanel(issue.id)}
-                            >
-                                {issue.title}
-                            </button>
-                        ) : (
-                            <Link
-                                to={`/issues/${issue.id}`}
-                                title="Open full page"
-                                className="truncate text-sm font-semibold hover:underline"
-                            >
-                                {issue.title}
-                            </Link>
-                        )}
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <Badge variant="secondary" className={cn("text-xs", getStatusBadgeClass(issue.status))}>
-                            {STATUS_LABELS[issue.status] || issue.status}
-                        </Badge>
-                        <Badge variant={getPriorityBadgeVariant(issue.priority)} className="text-xs">
-                            {PRIORITY_LABELS[issue.priority] || issue.priority}
-                        </Badge>
-                        {issue.dueDate && (
-                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                {formatDate(issue.dueDate)}
-                            </span>
-                        )}
-                        {issue.assigneeId && (
-                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                                <User className="h-3 w-3" />
-                                {getUserName(issue.assigneeId) || `User #${issue.assigneeId}`}
-                            </span>
-                        )}
-                    </div>
-                    <IssueLabelChips labels={issue.labels || []} max={3} className="mt-2" />
-                </div>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground"
-                    onClick={() => onOpenPanel(issue.id)}
-                    title={jiraLike ? "Open details panel" : "Quick preview"}
-                >
-                    <Eye className="h-4 w-4" />
-                </Button>
-            </div>
+        <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
+            <EmptyIcon width={24} height={24} aria-hidden="true" className="text-muted-foreground" />
+            <p className="font-pixel text-lg font-bold">{title}</p>
+            {hint && <p className="max-w-xs text-sm text-muted-foreground">{hint}</p>}
         </div>
     );
 }
 
-function ProjectCard({ project, issues, onPreview, onIssuePreview }) {
+// Cabinet menu: arrow keys move the pixel cursor between layouts
+function ModeSwitch({ value, onChange }) {
+    const index = Math.max(0, MODE_OPTIONS.findIndex((mode) => mode.value === value));
+
+    const handleKeyDown = (event) => {
+        if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+        event.preventDefault();
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        const next = MODE_OPTIONS[(index + step + MODE_OPTIONS.length) % MODE_OPTIONS.length];
+        onChange(next.value);
+        event.currentTarget.querySelector(`[data-mode="${next.value}"]`)?.focus();
+    };
+
     return (
-        <ProjectFlipCard
-            project={project}
-            issues={issues}
-            onPreview={onPreview}
-            onIssuePreview={onIssuePreview}
-        />
+        <div role="radiogroup" aria-label="Dashboard layout" onKeyDown={handleKeyDown} className="px-chamfer flex border-2 border-border bg-card p-0.5">
+            {MODE_OPTIONS.map((mode) => {
+                const active = value === mode.value;
+                return (
+                    <button
+                        key={mode.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        tabIndex={active ? 0 : -1}
+                        data-mode={mode.value}
+                        onClick={() => onChange(mode.value)}
+                        className={cn("dash-mode hud flex h-8 items-center gap-1.5 whitespace-nowrap px-2.5 text-[0.6875rem]", active && "is-active")}
+                    >
+                        <IconProgress width={12} height={12} aria-hidden="true" className="dash-cursor" />
+                        {mode.label}
+                    </button>
+                );
+            })}
+        </div>
     );
 }
 
-function ChartHeaderControls({ title, projects, projectFilter, onProjectChange, variant, variantOptions, onVariantChange }) {
+const pad2 = (n) => String(n).padStart(2, "0");
+
+// One cabinet HUD strip: caps label + score readout, colored by meaning
+function HudBar({ items }) {
+    return (
+        <dl className="mb-10 grid grid-cols-2 gap-[2px] border-2 border-border bg-border sm:grid-cols-4 lg:flex">
+            {items.map((item) => (
+                <div
+                    key={item.label}
+                    className={cn(
+                        "flex min-w-0 items-baseline gap-2.5 bg-card px-4 py-3",
+                        item.wide && "col-span-2",
+                        item.grow && "col-span-2 sm:col-span-4 lg:flex-1"
+                    )}
+                >
+                    <dt className="hud shrink-0 text-[0.625rem] text-muted-foreground">{item.label}</dt>
+                    <dd className={cn("flex min-w-0 items-center gap-3", item.grow && "flex-1", item.tone)}>
+                        <span className={cn("px-num leading-none", item.text ? "truncate text-base" : "text-2xl")}>{item.value}</span>
+                        {item.meter != null && <PxMeter value={item.meter} className="min-w-16 flex-1" label={item.label} color="var(--px-gold)" />}
+                    </dd>
+                </div>
+            ))}
+        </dl>
+    );
+}
+
+function IssueRow({ issue, jiraLike, onOpenPanel, flash }) {
+    const dueTime = issue.dueDate ? new Date(issue.dueDate).getTime() : null;
+    const overdue = dueTime != null && dueTime < startOfToday() && issue.status !== "DONE";
+
+    return (
+        <li className={cn("grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-t-2 border-border px-4 py-3 first:border-t-0", `st-${issue.status}`, flash ? "px-flash" : overdue && "px-flash-red relative")}>
+            <span className="dash-glyph grid h-9 w-9 place-items-center border-2" title={STATUS_LABELS[issue.status]}>
+                <StatusGlyph status={issue.status} size={18} />
+            </span>
+            <div className="min-w-0">
+                <div className="flex min-w-0 items-baseline gap-2">
+                    <span className="px-num shrink-0 text-xs text-muted-foreground">{issue.key}</span>
+                    {jiraLike ? (
+                        <button
+                            type="button"
+                            title="Open details panel"
+                            className="truncate text-left text-[0.9375rem] font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onClick={() => onOpenPanel(issue.id)}
+                        >
+                            {issue.title}
+                        </button>
+                    ) : (
+                        <Link
+                            to={`/issues/${issue.id}`}
+                            title="Open full page"
+                            className="truncate text-[0.9375rem] font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            {issue.title}
+                        </Link>
+                    )}
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <span className="hud st-ink text-[0.6875rem]">{STATUS_LABELS[issue.status] || issue.status}</span>
+                    <PriorityMark priority={issue.priority} />
+                    {issue.dueDate && (
+                        <span className={cn("hud inline-flex items-center gap-1 text-[0.6875rem]", overdue ? "text-[var(--px-red)]" : "text-muted-foreground")}>
+                            <IconCalendar width={12} height={12} aria-hidden="true" />
+                            {overdue ? `Overdue ${formatDate(issue.dueDate)}` : formatDate(issue.dueDate)}
+                        </span>
+                    )}
+                    <IssueLabelChips labels={issue.labels || []} max={3} />
+                </div>
+            </div>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground"
+                onClick={() => onOpenPanel(issue.id)}
+                title={jiraLike ? "Open details panel" : "Quick preview"}
+                aria-label={`Preview ${issue.key}`}
+            >
+                <IconEye aria-hidden="true" />
+            </Button>
+        </li>
+    );
+}
+
+function RowsSkeleton({ rows = 4 }) {
+    return (
+        <ul aria-hidden="true">
+            {Array.from({ length: rows }, (_, i) => (
+                <li key={i} className="flex items-center gap-3 border-t-2 border-border px-4 py-3.5 first:border-t-0">
+                    <span className="h-9 w-9 bg-muted" />
+                    <div className="flex-1 space-y-2">
+                        <div className="dash-skeleton h-3 w-2/3 bg-muted" />
+                        <div className="dash-skeleton h-2.5 w-1/3 bg-muted" />
+                    </div>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+function StageMeter({ issues }) {
+    const counts = ALL_STATUSES
+        .map((status) => ({ status, count: issues.filter((issue) => issue.status === status).length }))
+        .filter((entry) => entry.count > 0);
+
+    return (
+        <WidgetShell title="All stages" count={issues.length}>
+            {counts.length === 0 ? (
+                <EmptyState title="No issues yet" hint="Stage totals appear once issues exist." />
+            ) : (
+                <div className="p-4">
+                    <div className="dash-stagebar flex h-4 gap-[2px]" role="img" aria-label="Issues by status">
+                        {counts.map((entry) => (
+                            <span
+                                key={entry.status}
+                                title={`${STATUS_LABELS[entry.status]}: ${entry.count}`}
+                                style={{ flexGrow: entry.count, background: STATUS_COLORS[entry.status] }}
+                            />
+                        ))}
+                    </div>
+                    <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5">
+                        {counts.map((entry) => (
+                            <li key={entry.status} className={cn("flex min-w-0 items-center gap-2", `st-${entry.status}`)}>
+                                <StatusGlyph status={entry.status} size={14} />
+                                <span className="truncate text-sm text-muted-foreground">{STATUS_LABELS[entry.status]}</span>
+                                <span className="px-num ml-auto text-sm">{entry.count}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </WidgetShell>
+    );
+}
+
+function ProjectList({ projects, onPreview }) {
+    if (projects.length === 0) {
+        return <EmptyState icon={IconFolder} title="No owned projects" hint="Projects you create show up here." />;
+    }
+
+    return (
+        <ul>
+            {projects.map((project) => (
+                <li key={project.id} className="flex items-center gap-3 border-t-2 border-border px-4 py-3 first:border-t-0">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-3">
+                            <Link
+                                to={`/projects/${project.id}`}
+                                title="Open full page"
+                                className="truncate font-pixel text-base font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                {project.name}
+                            </Link>
+                            <span className="px-num shrink-0 text-xs text-muted-foreground">
+                                {project.doneIssues}/{project.totalIssues}
+                            </span>
+                        </div>
+                        <PxMeter value={project.progress} className="mt-2" label={`${project.name} progress`} />
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-muted-foreground"
+                        onClick={() => onPreview(project.id)}
+                        title="Quick preview"
+                        aria-label={`Preview ${project.name}`}
+                    >
+                        <IconEye aria-hidden="true" />
+                    </Button>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+function ChartHeaderControls({ projects, projectFilter, onProjectChange, variant, variantOptions, onVariantChange }) {
     return (
         <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold mr-auto">{title}</p>
             <Select value={variant} onValueChange={onVariantChange}>
-                <SelectTrigger className="h-8 w-[110px] text-xs">
+                <SelectTrigger className="hud h-9 w-[92px] text-[0.6875rem]" aria-label="Chart type">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                     {variantOptions.map((opt) => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        <SelectItem key={opt} value={opt} className="hud text-[0.6875rem]">{opt}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
             <Select value={projectFilter} onValueChange={onProjectChange}>
-                <SelectTrigger className="h-8 w-[160px] text-xs">
+                <SelectTrigger className="hud h-9 w-[140px] text-[0.6875rem]" aria-label="Project">
                     <SelectValue placeholder="All Projects" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
+                    <SelectItem value="all" className="hud text-[0.6875rem]">All Projects</SelectItem>
                     {projects.map((project) => (
-                        <SelectItem key={project.id} value={String(project.id)}>{project.shortName}</SelectItem>
+                        <SelectItem key={project.id} value={String(project.id)} className="hud text-[0.6875rem]">{project.shortName}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>
@@ -242,140 +404,94 @@ function ChartHeaderControls({ title, projects, projectFilter, onProjectChange, 
     );
 }
 
-function IssueStatusChartWidget({ issues, projects, projectFilter, onProjectChange, variant, onVariantChange }) {
-    const scopedIssues = projectFilter === "all"
+// Charts hold data people read: no draw-in animation, square bars on the tile grid.
+function DistributionChart({ data, variant, config }) {
+    return (
+        <ChartContainer config={config} className="h-64 w-full aspect-auto">
+            {variant === "pie" ? (
+                <PieChart>
+                    <Pie data={data} dataKey="value" nameKey="label" innerRadius={52} outerRadius={86} paddingAngle={2} isAnimationActive={false} stroke="var(--color-card)" strokeWidth={2}>
+                        {data.map((entry) => <Cell key={entry.key} fill={entry.fill} />)}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+            ) : (
+                <BarChart data={data} margin={{ left: 0, right: 12 }}>
+                    <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={HUD_TICK} />
+                    <YAxis tickLine={false} axisLine={false} width={30} allowDecimals={false} tick={HUD_TICK} />
+                    <Bar dataKey="value" radius={0} isAnimationActive={false}>
+                        {data.map((entry) => <Cell key={entry.key} fill={entry.fill} />)}
+                    </Bar>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                </BarChart>
+            )}
+        </ChartContainer>
+    );
+}
+
+function scopeIssues(issues, projectFilter) {
+    return projectFilter === "all"
         ? issues
         : issues.filter((issue) => String(issue.projectId) === String(projectFilter));
+}
 
-    const chartConfig = {
-        NEW: { label: "New", color: "#3b82f6" },
-        IN_PROGRESS: { label: "In Progress", color: "#f59e0b" },
-        DONE: { label: "Done", color: "#10b981" },
-        CANCELED: { label: "Canceled", color: "#6b7280" },
-    };
-
-    const data = Object.entries(chartConfig).map(([status, cfg]) => ({
-        status,
-        label: cfg.label,
+function IssueStatusChartWidget({ issues, projects, projectFilter, onProjectChange, variant, onVariantChange }) {
+    const scopedIssues = scopeIssues(issues, projectFilter);
+    const config = Object.fromEntries(ALL_STATUSES.map((status) => [status, { label: STATUS_LABELS[status], color: STATUS_COLORS[status] }]));
+    const data = ALL_STATUSES.map((status) => ({
+        key: status,
+        label: STATUS_LABELS[status],
         value: scopedIssues.filter((issue) => issue.status === status).length,
-        fill: cfg.color,
+        fill: STATUS_COLORS[status],
     })).filter((item) => item.value > 0);
 
     return (
         <WidgetShell
-            title="Issue Status"
-            subtitle="Live status distribution"
-            action={(
-                <ChartHeaderControls
-                    title="Issue Status"
-                    projects={projects}
-                    projectFilter={projectFilter}
-                    onProjectChange={onProjectChange}
-                    variant={variant}
-                    variantOptions={["pie", "bar"]}
-                    onVariantChange={onVariantChange}
-                />
-            )}
+            title="Issue status"
+            count={scopedIssues.length}
+            action={<ChartHeaderControls projects={projects} projectFilter={projectFilter} onProjectChange={onProjectChange} variant={variant} variantOptions={["pie", "bar"]} onVariantChange={onVariantChange} />}
         >
-            {data.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No issue data available</p>
-            ) : (
-                <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
-                    {variant === "pie" ? (
-                        <PieChart>
-                            <Pie data={data} dataKey="value" nameKey="label" innerRadius={52} outerRadius={86} paddingAngle={2}>
-                                {data.map((entry) => <Cell key={entry.status} fill={entry.fill} />)}
-                            </Pie>
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                        </PieChart>
-                    ) : (
-                        <BarChart data={data} margin={{ left: 0, right: 12 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                            <YAxis tickLine={false} axisLine={false} width={30} />
-                            <Bar dataKey="value" radius={6} fill="#3b82f6" />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                        </BarChart>
-                    )}
-                </ChartContainer>
-            )}
+            <div className="p-4">
+                {data.length === 0 ? <EmptyState title="No issue data" /> : <DistributionChart data={data} variant={variant} config={config} />}
+            </div>
         </WidgetShell>
     );
 }
 
 function IssuePriorityChartWidget({ issues, projects, projectFilter, onProjectChange, variant, onVariantChange }) {
-    const scopedIssues = projectFilter === "all"
-        ? issues
-        : issues.filter((issue) => String(issue.projectId) === String(projectFilter));
-
-    const chartConfig = {
-        LOW: { label: "Low", color: "#22c55e" },
-        NORMAL: { label: "Normal", color: "#3b82f6" },
-        HIGH: { label: "High", color: "#f59e0b" },
-        CRITICAL: { label: "Critical", color: "#ef4444" },
-    };
-
-    const data = Object.entries(chartConfig).map(([priority, cfg]) => ({
-        priority,
-        label: cfg.label,
+    const scopedIssues = scopeIssues(issues, projectFilter);
+    const priorities = Object.keys(PRIORITY_COLORS);
+    const config = Object.fromEntries(priorities.map((priority) => [priority, { label: PRIORITY_LABELS[priority], color: PRIORITY_COLORS[priority] }]));
+    const data = priorities.map((priority) => ({
+        key: priority,
+        label: PRIORITY_LABELS[priority],
         value: scopedIssues.filter((issue) => issue.priority === priority).length,
-        fill: cfg.color,
+        fill: PRIORITY_COLORS[priority],
     })).filter((item) => item.value > 0);
 
     return (
         <WidgetShell
-            title="Issue Priority"
-            subtitle="Priority pressure by project"
-            action={(
-                <ChartHeaderControls
-                    title="Issue Priority"
-                    projects={projects}
-                    projectFilter={projectFilter}
-                    onProjectChange={onProjectChange}
-                    variant={variant}
-                    variantOptions={["bar", "pie"]}
-                    onVariantChange={onVariantChange}
-                />
-            )}
+            title="Issue priority"
+            count={scopedIssues.length}
+            action={<ChartHeaderControls projects={projects} projectFilter={projectFilter} onProjectChange={onProjectChange} variant={variant} variantOptions={["bar", "pie"]} onVariantChange={onVariantChange} />}
         >
-            {data.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No priority data available</p>
-            ) : (
-                <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
-                    {variant === "pie" ? (
-                        <PieChart>
-                            <Pie data={data} dataKey="value" nameKey="label" innerRadius={52} outerRadius={86} paddingAngle={2}>
-                                {data.map((entry) => <Cell key={entry.priority} fill={entry.fill} />)}
-                            </Pie>
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                        </PieChart>
-                    ) : (
-                        <BarChart data={data} margin={{ left: 0, right: 12 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                            <YAxis tickLine={false} axisLine={false} width={30} />
-                            <Bar dataKey="value" radius={6} fill="#f59e0b" />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                        </BarChart>
-                    )}
-                </ChartContainer>
-            )}
+            <div className="p-4">
+                {data.length === 0 ? <EmptyState title="No priority data" /> : <DistributionChart data={data} variant={variant} config={config} />}
+            </div>
         </WidgetShell>
     );
 }
 
 function IssueTrendChartWidget({ issues, projects, projectFilter, onProjectChange, variant, onVariantChange }) {
-    const scopedIssues = projectFilter === "all"
-        ? issues
-        : issues.filter((issue) => String(issue.projectId) === String(projectFilter));
-
+    const scopedIssues = scopeIssues(issues, projectFilter);
     const bucket = new Map();
+    const monthLabel = new Intl.DateTimeFormat("en-GB", { month: "short", year: "2-digit" });
     for (const issue of scopedIssues) {
         if (!issue.createdAt) continue;
         const date = new Date(issue.createdAt);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        const label = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-        const current = bucket.get(key) || { label, created: 0, done: 0 };
+        const current = bucket.get(key) || { label: monthLabel.format(date), created: 0, done: 0 };
         current.created += 1;
         if (issue.status === "DONE") current.done += 1;
         bucket.set(key, current);
@@ -386,59 +502,50 @@ function IssueTrendChartWidget({ issues, projects, projectFilter, onProjectChang
         .map(([, value]) => value);
 
     const chartConfig = {
-        created: { label: "Created", color: "#3b82f6" },
-        done: { label: "Done", color: "#10b981" },
+        created: { label: "Created", color: "var(--st-progress)" },
+        done: { label: "Done", color: "var(--st-done)" },
     };
 
     return (
         <WidgetShell
-            title="Issue Trend"
-            subtitle="Monthly creation vs completion"
-            action={(
-                <ChartHeaderControls
-                    title="Issue Trend"
-                    projects={projects}
-                    projectFilter={projectFilter}
-                    onProjectChange={onProjectChange}
-                    variant={variant}
-                    variantOptions={["line", "bar"]}
-                    onVariantChange={onVariantChange}
-                />
-            )}
+            title="Issue trend"
+            action={<ChartHeaderControls projects={projects} projectFilter={projectFilter} onProjectChange={onProjectChange} variant={variant} variantOptions={["line", "bar"]} onVariantChange={onVariantChange} />}
         >
-            {data.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Not enough timeline data yet</p>
-            ) : (
-                <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
-                    {variant === "line" ? (
-                        <LineChart data={data} margin={{ left: 0, right: 12 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                            <YAxis tickLine={false} axisLine={false} width={30} />
-                            <Line type="monotone" dataKey="created" stroke="var(--color-created)" strokeWidth={2.5} dot={false} />
-                            <Line type="monotone" dataKey="done" stroke="var(--color-done)" strokeWidth={2.5} dot={false} />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                        </LineChart>
-                    ) : (
-                        <BarChart data={data} margin={{ left: 0, right: 12 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
-                            <YAxis tickLine={false} axisLine={false} width={30} />
-                            <Bar dataKey="created" radius={6} fill="var(--color-created)" />
-                            <Bar dataKey="done" radius={6} fill="var(--color-done)" />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                        </BarChart>
-                    )}
-                </ChartContainer>
-            )}
+            <div className="p-4">
+                {data.length === 0 ? (
+                    <EmptyState title="Not enough history yet" />
+                ) : (
+                    <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
+                        {variant === "line" ? (
+                            <LineChart data={data} margin={{ left: 0, right: 12 }}>
+                                <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={HUD_TICK} />
+                                <YAxis tickLine={false} axisLine={false} width={30} allowDecimals={false} tick={HUD_TICK} />
+                                <Line type="stepAfter" dataKey="created" stroke="var(--color-created)" strokeWidth={3} dot={false} isAnimationActive={false} />
+                                <Line type="stepAfter" dataKey="done" stroke="var(--color-done)" strokeWidth={3} dot={false} isAnimationActive={false} />
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                            </LineChart>
+                        ) : (
+                            <BarChart data={data} margin={{ left: 0, right: 12 }}>
+                                <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={HUD_TICK} />
+                                <YAxis tickLine={false} axisLine={false} width={30} allowDecimals={false} tick={HUD_TICK} />
+                                <Bar dataKey="created" radius={0} fill="var(--color-created)" isAnimationActive={false} />
+                                <Bar dataKey="done" radius={0} fill="var(--color-done)" isAnimationActive={false} />
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                            </BarChart>
+                        )}
+                    </ChartContainer>
+                )}
+            </div>
         </WidgetShell>
     );
 }
 
 function ProjectProgressChartWidget({ projects }) {
     const chartConfig = {
-        progress: { label: "Progress", color: "#7c3aed" },
-        issues: { label: "Issues", color: "#06b6d4" },
+        progress: { label: "Progress %", color: "var(--st-done)" },
+        issues: { label: "Issues", color: "var(--st-new)" },
     };
 
     const data = projects.slice(0, 8).map((project) => ({
@@ -448,34 +555,39 @@ function ProjectProgressChartWidget({ projects }) {
     }));
 
     return (
-        <WidgetShell title="Project Progress" subtitle="Delivery and workload by project">
-            {data.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No project data available</p>
-            ) : (
-                <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
-                    <BarChart data={data} margin={{ left: 0, right: 12 }}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
-                        <YAxis tickLine={false} axisLine={false} width={30} />
-                        <Bar dataKey="progress" radius={6} fill="var(--color-progress)" />
-                        <Bar dataKey="issues" radius={6} fill="var(--color-issues)" />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                    </BarChart>
-                </ChartContainer>
-            )}
+        <WidgetShell title="Project progress" count={data.length}>
+            <div className="p-4">
+                {data.length === 0 ? (
+                    <EmptyState icon={IconFolder} title="No project data" />
+                ) : (
+                    <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
+                        <BarChart data={data} margin={{ left: 0, right: 12 }}>
+                            <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                            <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={HUD_TICK} />
+                            <YAxis tickLine={false} axisLine={false} width={30} tick={HUD_TICK} />
+                            <Bar dataKey="progress" radius={0} fill="var(--color-progress)" isAnimationActive={false} />
+                            <Bar dataKey="issues" radius={0} fill="var(--color-issues)" isAnimationActive={false} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                        </BarChart>
+                    </ChartContainer>
+                )}
+            </div>
         </WidgetShell>
     );
 }
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
     const { isMobile } = useResponsiveNavigation();
     const { projects, fetchProjects, loading: projectsLoading } = useProjectStore();
     const { issues, fetchIssues, loading: issuesLoading } = useIssueStore();
-    const { users, fetchUsers } = useUserStore();
+    const { fetchUsers } = useUserStore();
     const getUserIdFromToken = useAuthStore((state) => state.getUserIdFromToken);
+    const authUser = useAuthStore((state) => state.user);
 
-    const headerRef = useRef(null);
-    const contentRef = useRef(null);
+    const flipStateRef = useRef(null);
+    const seenStatusRef = useRef(null);
 
     const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [selectedIssueId, setSelectedIssueId] = useState(null);
@@ -487,6 +599,7 @@ export default function Dashboard() {
     const [chartPrefs, setChartPrefs] = useState(DEFAULT_CHART_PREFS);
     const [widgetLayout, setWidgetLayout] = useState(DEFAULT_WIDGET_LAYOUT);
     const [storageHydrated, setStorageHydrated] = useState(false);
+    const [flashIds, setFlashIds] = useState([]);
 
     const currentUserId = getUserIdFromToken();
     const modeStorageKey = getUserScopedStorageKey(DASHBOARD_MODE_KEY, currentUserId);
@@ -499,27 +612,6 @@ export default function Dashboard() {
         fetchIssues();
         fetchUsers();
     }, []);
-
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            if (headerRef.current) {
-                gsap.fromTo(
-                    headerRef.current,
-                    { y: -18, opacity: 0 },
-                    { y: 0, opacity: 1, duration: 0.4, ease: "power2.out", clearProps: "transform,opacity" }
-                );
-            }
-            if (contentRef.current) {
-                const blocks = contentRef.current.querySelectorAll(".dash-anim");
-                gsap.fromTo(
-                    blocks,
-                    { y: 12, opacity: 0 },
-                    { y: 0, opacity: 1, duration: 0.35, stagger: 0.05, ease: "power2.out", clearProps: "transform,opacity" }
-                );
-            }
-        });
-        return () => ctx.revert();
-    }, [storageHydrated, projects.length, issues.length]);
 
     useEffect(() => {
         setStorageHydrated(false);
@@ -565,17 +657,45 @@ export default function Dashboard() {
     const activeMode = isMobile ? "default" : desktopMode;
     const jiraLikeMode = activeMode === "jira";
 
-    const getUserName = (userId) => {
-        if (!userId) return null;
-        const found = users.find((u) => String(u.id) === String(userId));
-        return found ? `${found.firstName || ""} ${found.lastName || ""}`.trim() || null : null;
+    // An issue whose status changed since the last data load flashes its sprite color once
+    useEffect(() => {
+        const next = new Map(issues.map((issue) => [issue.id, issue.status]));
+        const previous = seenStatusRef.current;
+        seenStatusRef.current = next;
+        if (!previous) return;
+        const changed = issues.filter((issue) => previous.has(issue.id) && previous.get(issue.id) !== issue.status).map((issue) => issue.id);
+        if (changed.length === 0) return;
+        setFlashIds(changed);
+        const timer = window.setTimeout(() => setFlashIds([]), 600);
+        return () => window.clearTimeout(timer);
+    }, [issues]);
+
+    // Widget reorder / toggle: FLIP the moved widgets (and configurator rows) to their new slots in whole-pixel steps
+    const runWithFlip = (update) => {
+        if (!prefersReducedMotion()) {
+            flipStateRef.current = Flip.getState("[data-dash-flip]");
+        }
+        update();
     };
+
+    useLayoutEffect(() => {
+        const state = flipStateRef.current;
+        if (!state) return;
+        flipStateRef.current = null;
+        Flip.from(state, {
+            targets: "[data-dash-flip]",
+            duration: 0.24,
+            ease: "steps(6)",
+            simple: true,
+        });
+    }, [customWidgets]);
 
     const projectsWithStats = useMemo(() => projects.map((project) => {
         const scopedIssues = issues.filter((issue) => issue.projectId === project.id);
         const done = scopedIssues.filter((issue) => issue.status === "DONE").length;
-        const active = scopedIssues.filter((issue) => issue.status === "IN_PROGRESS").length;
-        const todo = scopedIssues.filter((issue) => issue.status === "NEW").length;
+        // Same grouping as the board's Basic mode
+        const active = scopedIssues.filter((issue) => ["IN_PROGRESS", "WAITING_FOR_TEAM", "CODE_REVIEW"].includes(issue.status)).length;
+        const todo = scopedIssues.filter((issue) => ["NEW", "TRIAGE", "TODO"].includes(issue.status)).length;
         const progress = scopedIssues.length > 0 ? Math.round((done / scopedIssues.length) * 100) : 0;
         return {
             id: project.id,
@@ -596,20 +716,20 @@ export default function Dashboard() {
         () => projectsWithStats
             .filter((project) => String(project.ownerId) === String(currentUserId))
             .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-            .slice(0, 4),
+            .slice(0, 5),
         [projectsWithStats, currentUserId]
     );
 
-    const yourIssues = useMemo(
+    const yourOpenIssues = useMemo(
         () => issues
-            .filter((issue) => String(issue.assigneeId) === String(currentUserId) && issue.status !== "DONE")
-            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-            .slice(0, 6),
+            .filter((issue) => String(issue.assigneeId) === String(currentUserId) && issue.status !== "DONE" && issue.status !== "CANCELED")
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
         [issues, currentUserId]
     );
+    const yourIssues = yourOpenIssues.slice(0, 6);
 
     const recentProjects = useMemo(
-        () => projectsWithStats
+        () => [...projectsWithStats]
             .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
             .slice(0, 6),
         [projectsWithStats]
@@ -625,28 +745,45 @@ export default function Dashboard() {
         return map;
     }, [issues]);
 
-    const activeIssues = issues.filter((issue) => issue.status !== "DONE").length;
     const doneIssues = issues.filter((issue) => issue.status === "DONE").length;
     const completionRate = issues.length > 0 ? Math.round((doneIssues / issues.length) * 100) : 0;
 
-    const modeOptions = [
-        { value: "default", label: "Default", icon: LayoutDashboard },
-        { value: "custom", label: "Custom", icon: SlidersHorizontal },
-        { value: "jira", label: "Jira-like", icon: PanelRightOpen },
+    const today = startOfToday();
+    const overdueCount = yourOpenIssues.filter((issue) => issue.dueDate && new Date(issue.dueDate).getTime() < today).length;
+    const dueSoonCount = yourOpenIssues.filter((issue) => {
+        if (!issue.dueDate) return false;
+        const due = new Date(issue.dueDate).getTime();
+        return due >= today && due < today + 7 * DAY_MS;
+    }).length;
+    const inReviewCount = yourOpenIssues.filter((issue) => issue.status === "CODE_REVIEW").length;
+    const waitingCount = yourOpenIssues.filter((issue) => issue.status === "WAITING_FOR_TEAM").length;
+
+    const now = new Date();
+    const firstName = authUser?.firstName;
+    const summaryParts = [
+        yourOpenIssues.length === 0
+            ? "Nothing open is assigned to you"
+            : `${yourOpenIssues.length} open ${yourOpenIssues.length === 1 ? "issue" : "issues"} assigned to you`,
     ];
+    if (dueSoonCount > 0) summaryParts.push(`${dueSoonCount} due in the next 7 days`);
+    if (overdueCount > 0) summaryParts.push(`${overdueCount} overdue`);
 
     const customWidgetsOrdered = customWidgets.filter((id) => CUSTOM_WIDGET_OPTIONS.some((item) => item.id === id));
+    const configuratorRows = [
+        ...customWidgetsOrdered.map((id) => CUSTOM_WIDGET_OPTIONS.find((item) => item.id === id)),
+        ...CUSTOM_WIDGET_OPTIONS.filter((item) => !customWidgetsOrdered.includes(item.id)),
+    ];
 
-    const toggleCustomWidget = (widgetId) => {
+    const toggleCustomWidget = (widgetId) => runWithFlip(() => {
         setCustomWidgets((prev) => {
             if (prev.includes(widgetId)) {
                 return prev.length === 1 ? prev : prev.filter((item) => item !== widgetId);
             }
             return [...prev, widgetId];
         });
-    };
+    });
 
-    const moveCustomWidget = (widgetId, direction) => {
+    const moveCustomWidget = (widgetId, direction) => runWithFlip(() => {
         setCustomWidgets((prev) => {
             const index = prev.indexOf(widgetId);
             if (index < 0) return prev;
@@ -657,7 +794,7 @@ export default function Dashboard() {
             next.splice(target, 0, item);
             return next;
         });
-    };
+    });
 
     const updateChartPref = (key, value) => setChartPrefs((prev) => ({ ...prev, [key]: value }));
     const updateWidgetLayout = (widgetId, span) => setWidgetLayout((prev) => ({ ...prev, [widgetId]: span }));
@@ -666,45 +803,35 @@ export default function Dashboard() {
         : "md:col-span-2 xl:col-span-12");
 
     const renderYourIssuesWidget = () => (
-        <WidgetShell
-            title="Your Issues"
-            subtitle="Assigned to you and currently open"
-            action={<Badge variant="secondary" className="text-xs">{yourIssues.length}</Badge>}
-        >
-            {yourIssues.length === 0 ? (
-                <p className="text-sm text-muted-foreground">You are all caught up.</p>
+        <WidgetShell title="Your Issues" count={yourOpenIssues.length} action={<HeaderLink to="/issues">All issues</HeaderLink>}>
+            {loading && yourIssues.length === 0 ? (
+                <RowsSkeleton />
+            ) : yourIssues.length === 0 ? (
+                <EmptyState title="Queue clear" hint="Issues assigned to you will land here." />
             ) : (
-                <div className="space-y-2.5">
+                <ul>
                     {yourIssues.map((issue) => (
-                        <IssueItem
-                            key={issue.id}
-                            issue={issue}
-                            getUserName={getUserName}
-                            jiraLike={jiraLikeMode}
-                            onOpenPanel={setSelectedIssueId}
-                        />
+                        <IssueRow key={issue.id} issue={issue} jiraLike={jiraLikeMode} onOpenPanel={setSelectedIssueId} flash={flashIds.includes(issue.id)} />
                     ))}
-                </div>
+                </ul>
             )}
         </WidgetShell>
     );
 
     const renderRecentProjectsWidget = () => (
-        <WidgetShell
-            title="Recent Projects & Issues"
-            subtitle="Latest active projects with quick issue context"
-            action={<Badge variant="secondary" className="text-xs">{recentProjects.length}</Badge>}
-        >
-            {loading ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 rounded-lg bg-muted/40 animate-pulse" />)}
+        <WidgetShell title="Recent projects" count={recentProjects.length} plain action={<HeaderLink to="/projects">All projects</HeaderLink>}>
+            {loading && recentProjects.length === 0 ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {[1, 2, 3].map((i) => <div key={i} className="dash-skeleton h-72 border-2 border-border bg-muted" />)}
                 </div>
             ) : recentProjects.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No projects yet.</p>
+                <div className="border-2 border-dashed border-border">
+                    <EmptyState icon={IconFolder} title="No projects yet" hint="Create a project to start filing issues." />
+                </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {recentProjects.map((project) => (
-                        <ProjectCard
+                        <ProjectFlipCard
                             key={project.id}
                             project={project}
                             issues={issuesByProject.get(project.id) || []}
@@ -718,28 +845,19 @@ export default function Dashboard() {
     );
 
     const renderYourProjectsWidget = () => (
-        <WidgetShell
-            title="Your Projects"
-            subtitle="Owned by your account"
-            action={<Badge variant="secondary" className="text-xs">{yourProjects.length}</Badge>}
-        >
-            {yourProjects.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No owned projects yet.</p>
-            ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                    {yourProjects.map((project) => (
-                        <ProjectCard
-                            key={project.id}
-                            project={project}
-                            issues={issuesByProject.get(project.id) || []}
-                            onPreview={setSelectedProjectId}
-                            onIssuePreview={setSelectedIssueId}
-                        />
-                    ))}
-                </div>
-            )}
+        <WidgetShell title="Your Projects" count={yourProjects.length}>
+            {loading && yourProjects.length === 0 ? <RowsSkeleton rows={3} /> : <ProjectList projects={yourProjects} onPreview={setSelectedProjectId} />}
         </WidgetShell>
     );
+
+    const chartProps = (variantKey) => ({
+        issues,
+        projects,
+        projectFilter: chartPrefs.projectId,
+        onProjectChange: (value) => updateChartPref("projectId", value),
+        variant: chartPrefs[variantKey],
+        onVariantChange: (value) => updateChartPref(variantKey, value),
+    });
 
     const renderCustomWidget = (widgetId) => {
         switch (widgetId) {
@@ -750,38 +868,11 @@ export default function Dashboard() {
             case "your-projects":
                 return renderYourProjectsWidget();
             case "issue-status-chart":
-                return (
-                    <IssueStatusChartWidget
-                        issues={issues}
-                        projects={projects}
-                        projectFilter={chartPrefs.projectId}
-                        onProjectChange={(value) => updateChartPref("projectId", value)}
-                        variant={chartPrefs.issueStatusVariant}
-                        onVariantChange={(value) => updateChartPref("issueStatusVariant", value)}
-                    />
-                );
+                return <IssueStatusChartWidget {...chartProps("issueStatusVariant")} />;
             case "issue-priority-chart":
-                return (
-                    <IssuePriorityChartWidget
-                        issues={issues}
-                        projects={projects}
-                        projectFilter={chartPrefs.projectId}
-                        onProjectChange={(value) => updateChartPref("projectId", value)}
-                        variant={chartPrefs.issuePriorityVariant}
-                        onVariantChange={(value) => updateChartPref("issuePriorityVariant", value)}
-                    />
-                );
+                return <IssuePriorityChartWidget {...chartProps("issuePriorityVariant")} />;
             case "issue-trend-chart":
-                return (
-                    <IssueTrendChartWidget
-                        issues={issues}
-                        projects={projects}
-                        projectFilter={chartPrefs.projectId}
-                        onProjectChange={(value) => updateChartPref("projectId", value)}
-                        variant={chartPrefs.issueTrendVariant}
-                        onVariantChange={(value) => updateChartPref("issueTrendVariant", value)}
-                    />
-                );
+                return <IssueTrendChartWidget {...chartProps("issueTrendVariant")} />;
             case "project-progress-chart":
                 return <ProjectProgressChartWidget projects={recentProjects} />;
             default:
@@ -791,110 +882,91 @@ export default function Dashboard() {
 
     return (
         <AppLayout>
-            <div ref={headerRef} className="dash-anim rounded-xl border border-border/70 bg-card p-4 md:p-5 mb-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="dash mx-auto w-full max-w-[1400px]">
+                <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div className="min-w-0">
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Workspace</p>
-                        <h1 className="text-2xl md:text-3xl font-bold mt-1">Operational Dashboard</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            One place for planning, progress and execution.
-                        </p>
+                        <h1 className="px-display text-2xl leading-none md:text-3xl">
+                            {greetingFor(now)}{firstName ? `, ${firstName}` : ""}
+                        </h1>
+                        <p className="mt-2 text-sm text-muted-foreground">{summaryParts.join(" · ")}.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        {!isMobile && (
-                            <div className="inline-flex items-center rounded-lg border border-border bg-background p-1">
-                                {modeOptions.map((mode) => {
-                                    const Icon = mode.icon;
-                                    const active = desktopMode === mode.value;
-                                    return (
-                                        <button
-                                            key={mode.value}
-                                            type="button"
-                                            onClick={() => setDesktopMode(mode.value)}
-                                            className={cn(
-                                                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-                                                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-                                            )}
-                                        >
-                                            <Icon className="h-3.5 w-3.5" />
-                                            {mode.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        {!isMobile && <ModeSwitch value={desktopMode} onChange={setDesktopMode} />}
                         {!isMobile && desktopMode === "custom" && (
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" size="sm" className="gap-1.5">
-                                        <Settings2 className="h-4 w-4" />
-                                        Configure widgets
+                                        <IconCog aria-hidden="true" />
+                                        Widgets
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent align="end" className="w-[350px]">
-                                    <div className="space-y-3">
-                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Custom dashboard widgets</p>
-                                        <div className="space-y-2">
-                                            {CUSTOM_WIDGET_OPTIONS.map((widget) => {
-                                                const index = customWidgetsOrdered.indexOf(widget.id);
-                                                const enabled = customWidgets.includes(widget.id);
-                                                const width = widgetLayout[widget.id] || DEFAULT_WIDGET_LAYOUT[widget.id] || "full";
-                                                return (
-                                                    <div key={widget.id} className="rounded-md border border-border/70 p-2 space-y-1.5">
-                                                        <div className="flex items-center gap-2 text-sm">
-                                                            <Checkbox checked={enabled} onCheckedChange={() => toggleCustomWidget(widget.id)} />
-                                                            <span className="flex-1">{widget.label}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => moveCustomWidget(widget.id, "up")}
-                                                                disabled={!enabled || index <= 0}
-                                                                className="rounded border border-border p-1 text-muted-foreground enabled:hover:text-foreground enabled:hover:bg-muted disabled:opacity-40"
-                                                            >
-                                                                <ArrowUp className="h-3 w-3" />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => moveCustomWidget(widget.id, "down")}
-                                                                disabled={!enabled || index === -1 || index >= customWidgetsOrdered.length - 1}
-                                                                className="rounded border border-border p-1 text-muted-foreground enabled:hover:text-foreground enabled:hover:bg-muted disabled:opacity-40"
-                                                            >
-                                                                <ArrowDown className="h-3 w-3" />
-                                                            </button>
+                                <PopoverContent align="end" className="w-[400px] max-w-[calc(100vw-2rem)] border-2 p-2">
+                                    <p className="hud px-2 pb-2 pt-1 text-[0.625rem] text-muted-foreground">Shown widgets, top to bottom</p>
+                                    <ul className="space-y-1">
+                                        {configuratorRows.map((widget) => {
+                                            const index = customWidgetsOrdered.indexOf(widget.id);
+                                            const enabled = index !== -1;
+                                            const width = widgetLayout[widget.id] || DEFAULT_WIDGET_LAYOUT[widget.id] || "full";
+                                            return (
+                                                <li
+                                                    key={widget.id}
+                                                    data-flip-id={`cfg-${widget.id}`}
+                                                    data-dash-flip
+                                                    className={cn("flex items-center gap-2 border-2 px-2 py-1.5 text-sm", enabled ? "border-border bg-muted" : "border-transparent text-muted-foreground")}
+                                                >
+                                                    <Checkbox
+                                                        checked={enabled}
+                                                        onCheckedChange={() => toggleCustomWidget(widget.id)}
+                                                        aria-label={`Show ${widget.label}`}
+                                                    />
+                                                    <span className="min-w-0 flex-1 truncate">{widget.label}</span>
+                                                    {enabled && (
+                                                        <div className="flex border-2 border-border bg-card" role="group" aria-label={`${widget.label} width`}>
+                                                            {["half", "full"].map((span) => (
+                                                                <button
+                                                                    key={span}
+                                                                    type="button"
+                                                                    aria-pressed={width === span}
+                                                                    onClick={() => updateWidgetLayout(widget.id, span)}
+                                                                    className={cn(
+                                                                        "hud px-1.5 py-0.5 text-[0.625rem]",
+                                                                        width === span ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                                                                    )}
+                                                                >
+                                                                    {span}
+                                                                </button>
+                                                            ))}
                                                         </div>
-                                                        {enabled && (
-                                                            <div className="inline-flex items-center rounded-md border border-border p-0.5">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => updateWidgetLayout(widget.id, "half")}
-                                                                    className={cn(
-                                                                        "px-2 py-0.5 text-[10px] rounded-sm",
-                                                                        width === "half" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                                                                    )}
-                                                                >
-                                                                    Half
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => updateWidgetLayout(widget.id, "full")}
-                                                                    className={cn(
-                                                                        "px-2 py-0.5 text-[10px] rounded-sm",
-                                                                        width === "full" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                                                                    )}
-                                                                >
-                                                                    Full
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
+                                                    )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8"
+                                                        onClick={() => moveCustomWidget(widget.id, "up")}
+                                                        disabled={!enabled || index <= 0}
+                                                        aria-label={`Move ${widget.label} up`}
+                                                    >
+                                                        <IconArrowUp aria-hidden="true" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8"
+                                                        onClick={() => moveCustomWidget(widget.id, "down")}
+                                                        disabled={!enabled || index >= customWidgetsOrdered.length - 1}
+                                                        aria-label={`Move ${widget.label} down`}
+                                                    >
+                                                        <IconArrowDown aria-hidden="true" />
+                                                    </Button>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
                                 </PopoverContent>
                             </Popover>
                         )}
                         <div className="relative">
-                            <AddButton label="Project" onClick={() => setCreateProjectOpen(true)} />
+                            <AddButton label="Project" variant="outline" onClick={() => setCreateProjectOpen(true)} />
                             <span className="sr-only">+P</span>
                         </div>
                         <div className="relative">
@@ -902,35 +974,42 @@ export default function Dashboard() {
                             <span className="sr-only">+I</span>
                         </div>
                     </div>
+                </header>
+
+                <HudBar
+                    items={[
+                        { label: "Player", value: firstName || authUser?.email?.split("@")[0] || "P1", text: true, wide: true },
+                        { label: "Open", value: pad2(yourOpenIssues.length) },
+                        { label: "Due 7d", value: pad2(dueSoonCount), tone: dueSoonCount > 0 ? "text-[var(--px-cyan)]" : undefined },
+                        { label: "Overdue", value: pad2(overdueCount), tone: overdueCount > 0 ? "text-[var(--px-red)]" : undefined },
+                        { label: "Wait", value: pad2(waitingCount), tone: waitingCount > 0 ? "text-[var(--st-waiting)]" : undefined },
+                        { label: "Review", value: pad2(inReviewCount), tone: inReviewCount > 0 ? "text-[var(--st-review)]" : undefined },
+                        { label: "Done", value: pad2(doneIssues), tone: "text-[var(--px-gold)]" },
+                        { label: "Clear", value: `${completionRate}%`, meter: completionRate, grow: true },
+                    ]}
+                />
+
+                {/* Keyed by mode so a layout switch steps in instead of snapping */}
+                <div key={activeMode} className="dash-swap">
+                    {activeMode === "custom" ? (
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2 xl:grid-cols-12">
+                            {customWidgetsOrdered.map((widgetId) => (
+                                <div key={widgetId} data-flip-id={`w-${widgetId}`} data-dash-flip className={cn("min-w-0", getWidgetSpanClass(widgetId))}>
+                                    {renderCustomWidget(widgetId)}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-10 xl:grid-cols-12 xl:items-start">
+                            <div className="min-w-0 xl:col-span-8">{renderYourIssuesWidget()}</div>
+                            <aside className="flex min-w-0 flex-col gap-10 xl:col-span-4">
+                                <StageMeter issues={issues} />
+                                {renderYourProjectsWidget()}
+                            </aside>
+                            <div className="min-w-0 xl:col-span-12">{renderRecentProjectsWidget()}</div>
+                        </div>
+                    )}
                 </div>
-            </div>
-
-            <div className="dash-anim grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 mb-5">
-                <MetricTile label="Projects" value={projects.length} tone="violet" />
-                <MetricTile label="Active Issues" value={activeIssues} tone="blue" />
-                <MetricTile label="Done Issues" value={doneIssues} tone="green" />
-                <MetricTile label="Members" value={users.length} tone="cyan" />
-                <MetricTile label="Completion" value={`${completionRate}%`} tone="orange" />
-            </div>
-
-            <div ref={contentRef}>
-                {activeMode === "custom" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4">
-                        {customWidgetsOrdered.map((widgetId) => (
-                            <div key={widgetId} className={cn("dash-anim", getWidgetSpanClass(widgetId))}>
-                                {renderCustomWidget(widgetId)}
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-                        {DEFAULT_MODE_LAYOUT.map((widgetId) => (
-                            <div key={widgetId} className={cn("dash-anim", widgetId === "your-projects" ? "xl:col-span-4" : "xl:col-span-8")}>
-                                {renderCustomWidget(widgetId)}
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
 
             <ProjectDetailsModal
@@ -947,7 +1026,7 @@ export default function Dashboard() {
                     fetchIssues();
                 }}
                 contentClassName={jiraLikeMode
-                    ? "!left-auto !top-0 !right-0 !translate-x-0 !translate-y-0 !h-screen !w-[min(100vw,1100px)] !max-w-[min(100vw,1100px)] rounded-none border-l border-border"
+                    ? "!left-auto !top-0 !right-0 !translate-x-0 !translate-y-0 !h-dvh !w-[min(100vw,1100px)] !max-w-[min(100vw,1100px)] border-l-2 border-border !duration-200 data-[state=open]:!zoom-in-100 data-[state=closed]:!zoom-out-100 data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right"
                     : ""}
             />
             <CreateProjectModal open={createProjectOpen} onOpenChange={setCreateProjectOpen} />
@@ -955,4 +1034,3 @@ export default function Dashboard() {
         </AppLayout>
     );
 }
-
